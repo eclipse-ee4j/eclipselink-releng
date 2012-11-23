@@ -180,7 +180,63 @@ parseBuild() {
     fi
 }
 
-# TODO: NEED branch to verify instead of branch_NM, but need branch_NM to interact with Git
+unset getCurrentGitBranch
+getCurrentGitBranch() {
+    # parse status of repo for current branch
+    ststus_msg=`${GIT_EXEC} status`
+    gitbranch=`echo $ststus_msg | grep -m1 "#" | cut -s -d' ' -f4`
+
+    return $gitbranch
+}
+
+unset validateGitRepo
+validateGitRepo() {
+
+    echo "- validateGitRepo -"
+
+    #Must run git commands from Git repo dir so, store current dir, and switch to repo
+    curdir=`pwd`
+    cd ${RUNTIME_REPO}
+
+    # ensure repo is up-to-date
+    echo "Ensuring repo is up-to-date."
+    ${GIT_EXEC} pull
+
+    # parse status of repo for current branch
+    ststus_msg=`${GIT_EXEC} status`
+    gitbranch=`echo $ststus_msg | grep -m1 "#" | cut -s -d' ' -f4`
+    echo "Currently on '${gitbranch}' in '${RUNTIME_REPO}'"
+
+    # is current branch the desired branch?
+    error_cnt=0
+    if [ "${BRANCH_NM}" = "${gitbranch}" ] ; then
+       echo "Git repo already on branch '$BRANCH_NM'."
+    else
+       # switch to desired branch
+       ${GIT_EXEC} checkout ${BRANCH_NM}
+       if [ "$?" = "0" ] ; then
+           # parse status of repo for current branch
+           ststus_msg=`${GIT_EXEC} status`
+           gitbranch=`echo $ststus_msg | grep -m1 "#" | cut -s -d' ' -f4`
+           echo "Now on '${gitbranch}' in '${RUNTIME_REPO}'"
+           echo "Git checkout complete."
+       else
+           # if encountered error, increment error_cnt
+           error_cnt=`expr ${error_cnt} + 1`
+       fi
+    fi
+
+    # verify switch took place
+    if [ "$error_cnt" = "0" ] ; then
+        echo "Git Repo ready for promotion to continue..."
+    else
+        echo "Error detected switching branches. exiting..."
+        exit 1
+    fi
+
+    cd $curdir
+}
+
 unset validateBuild
 validateBuild() {
     echo "- validateBuild -"
@@ -226,7 +282,61 @@ validateMilestone() {
         echo "Milestone dir: '${DNLD_DIR}/milestone/${VERSION}/${milestone}' not preexisting."
         echo "Continuing..."
     fi
+}
 
+unset parseVersion
+parseVersion() {
+    branch_nm=$1
+    echo "- parseVersion -"
+
+    if [ -d ${DNLD_DIR}/milestones ] ; then
+        if [ "$branch_nm" = "master" ] ; then
+            # Version is 'highest' dir ending in '0'
+            VERSION=`ls -r ${DNLD_DIR}/milestones | grep -m1 0$`
+        else
+            # Version is 'highest' dir begining with value of $branch_nm
+            VERSION=`ls -r ${DNLD_DIR}/milestones | grep -m1 $branch_nm`
+        fi
+    else
+        echo "Cannot find milestones. '${DNLD_DIR}/milestones' not found."
+    fi
+    echo "Version= '$VERSION'"
+}
+
+unset validateReleaseMilestone
+validateReleaseMilestone() {
+    milestone=$1
+    echo "- validateReleaseMilestone -"
+
+    # if milestone begins with either "M" or "RC" (doesn't (not begin with M) and (not begin with RC))
+    test1=`echo $milestone | grep -m1 ^M`
+    test2=`echo $milestone | grep -m1 ^RC`
+    if [ ! \( \( "$test1" = "" \) -a \( "$test2" = "" \) \) ] ; then
+        if [ -d ${DNLD_DIR}/milestones/${VERSION}/${milestone} ] ; then
+            echo " Target Milestone dir: '${DNLD_DIR}/milestones/${VERSION}/${milestone}' exists. Continuing..."
+        else
+            echo "Milestone dir: '${DNLD_DIR}/milestones/${VERSION}/${milestone}' doesn't exist."
+            exit 1
+        fi
+    else
+        usage
+        echo "Invalid Milestone detected: '$milestone' doesn't begin with 'M' or 'RC'"
+        exit 1
+    fi
+}
+
+unset parseReleaseMilestone
+parseReleaseMilestone() {
+    #find 'build' data from published milestone
+    echo "Target Milestone: '${MILESTONE}'"
+
+    BUILD=`ls ${DNLD_DIR}/milestones/${VERSION}/${MILESTONE} | grep -m1 P2signed | cut -d'-' -f3-4 | cut -d'.' -f1-4`
+    echo "BUILD: '${BUILD}'"
+
+    # set Milestone to 'release' for ant script
+    # TODO: fix ant so will promote from published milestone rather than nightly
+    MILESTONE=RELEASE
+    parseBuild ${BUILD}
 }
 
 #TODO Must have Git validation and setup completed first
@@ -265,8 +375,6 @@ callAnt() {
             echo "   qualifier = '${qualifier}'"
             echo "   githash   = '${githash}'"
         fi
-
-        error_cnt=0
 
         #Invoke Antscript for Branch specific promotion
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dreleng.repo.dir=${RELENG_REPO} -Dgit.exec=${GIT_EXEC}"
@@ -386,16 +494,28 @@ else
     echo "Found: ${GIT_EXEC}"
 fi
 if [ ! -d ${RELENG_REPO} ] ; then
-    echo "Releng repo missing! Will set flag to create."
-    #releng doest exist clone it (if git was found).
+    echo "Releng repo missing! Will try to clone."
+    echo "${GIT_EXEC} clone ssh://git.eclipse.org/gitroot/eclipselink/eclipselink.releng.git"
+    if [ ! -d ${RELENG_REPO} ] ; then
+        echo "Still cannot find '${RELENG_REPO}'. Something went wrong... aborting."
+        exit 1
+    else
+        echo "Cloning successful."
+    fi
 else
-    echo "Releng repo found."
+    echo "Releng repo '${RELENG_REPO}' found."
 fi
 if [ ! -d ${RUNTIME_REPO} ] ; then
-    echo "EclipseLink Runtime repo missing! Will set flag to create."
-    #runtime doest exist clone it (if git was found).
+    echo "EclipseLink Runtime repo missing! Will try to clone."
+    echo "${GIT_EXEC} clone ssh://git.eclipse.org/gitroot/eclipselink/eclipselink.runtime.git"
+    if [ ! -d ${RUNTIME_REPO} ] ; then
+        echo "Still cannot find '${RUNTIME_REPO}'. Something went wrong... aborting."
+        exit 1
+    else
+        echo "Cloning successful."
+    fi
 else
-    echo "EclipseLink Runtime repo found."
+    echo "EclipseLink Runtime repo '${RUNTIME_REPO}' found."
 fi
 echo "   Validated."
 echo " "
@@ -408,25 +528,32 @@ echo " "
 #   Begin WORK
 echo "Promote begin at: ${START_DATE}"
 
-#TODO:::
-#validateGitRepo
-
 #Determine if 'release' run or regular Milestone promotion
-if [ "$qualifier" = "release" ] ; then
+if [ "$BUILD" = "release" ] ; then
     RELEASE=true
-    # TODO: If RELEASE is set need to verify Milestone, and afer resolving BRANCH_NM to BRANCH,
-    #       parse QUALIFIER from Milestone filename, and derive date and hash from qualifier
+    # Figure out VERSION based upon BRANCH_NM
+    parseVersion $BRANCH_NM
+
+    # verify that specified milestone exists.
+    validateReleaseMilestone $MILESTONE
+
+    # relevant build coordinats from Milestone artifacts
+    parseReleaseMilestone
+
+    # Ensure we are on the correct branch in the repo, if build info is good
+    validateGitRepo
 else
-# TODO: Need to change to verify branch from autobuild.properties if possible, else just parse qualifier for date and hash
     # Get needed info from BUILD
     parseBuild $BUILD
 
     # Validate BUILD Exists
     validateBuild
 
+    # Ensure we are on the correct branch in the repo, if build info is good
+    validateGitRepo
+
     # Validate MILESTONE against convention, and verify not preexisting
     validateMilestone $MILESTONE
-
 fi
 
 echo "BUILD      ='${BUILD}'"

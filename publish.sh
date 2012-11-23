@@ -1,13 +1,24 @@
 # !/bin/sh
+#****************************************************************************************
+# Copyright (c) 2010, 2012 Oracle and/or its affiliates. All rights reserved.
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
+# which accompanies this distribution.
+#
+# The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+# and the Eclipse Distribution License is available at
+# http://www.eclipse.org/org/documents/edl-v10.php.
+#
+# Contributors:
+#  - egwin - ?? ???ber 20?? - 2.? - Initial implementation
+#  - egwin - 27 July 2012 - all - heavily modify for use with Hudson/Git process
+#****************************************************************************************
 
-#------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
 #    This script is designed to run from cron on the Eclipse foundation's build server
 #       It tests for the existence of a completed build or test run
-#       then initiates the publication of the results to the appropriate locations and
-#       sends out notifiacation when complete.
-#
-#    Author: Eric Gwin (Oracle)
-#
+#       then initiates the publication of the results to the appropriate locations
+#----------------------------------------------------------------------------------------
 
 #==========================
 #   Basic Env Setup
@@ -75,6 +86,7 @@ parseHandoff() {
     handoff_file=$1
     handoff_error_string1="Error: Invalid handoff_file name: '${handoff_file}'"
     handoff_error_string2="                   Was expecting: 'handoff-file-<PROC>-<BRANCH_NM>-<QUALIFIER>.dat'"
+    handoff_error_string3="                           where:"
     handoff_content_error1="Error: Invalid handoff_file contents: '`cat ${handoff_file}`'"
     handoff_content_error2="                       Was expecting: 'extract.loc=<BUILD_ARCHIVE_LOC> host=<HOST> maven.tag=<VERSION>-<MILESTONE>' "
 
@@ -96,9 +108,10 @@ parseHandoff() {
         QUALIFIER_ERR=false
     fi
     PROC=`echo ${handoff_file} | cut -s -d'-' -f3`
-    if [ !  \( \( "${PROC}" = "test" \) -o \( "${PROC}" = "build" \) \) ] ; then
+    if [ !  \( \( "${PROC}" = "test" \) -o \( "${PROC}" = "build" \) -o \( "${PROC}" = "tools" \) \) ] ; then
         echo "PROC ${handoff_error_string1}"
         echo "     ${handoff_error_string2}"
+        echo "     ${handoff_error_string3} <PROC> = 'build','test', or 'tools'!"
         PROC_ERR=true
     else
         PROC_ERR=false
@@ -481,7 +494,8 @@ publishMavenRepo() {
             error_cnt=`expr ${error_cnt} + 1`
         fi
         if [ "${DEBUG}" = "true" ] ; then
-            ls ${src}/maven
+            echo "Long-listing of '${src}/maven':"
+            ls -l ${src}/maven
         fi
 
         #Invoke Antscript for Maven upload
@@ -595,6 +609,72 @@ publishTestArtifacts() {
     fi
 }
 
+unset publishToolsArtifacts
+publishToolsArtifacts() {
+    # Usage: publishToolsArtifacts src dest version date host
+    src=$1
+    dest=$2
+    version=$3
+    date=$4
+
+    echo "Processing Tools Results for publishing..."
+    rootDest=${dest}/nightly
+
+    #verify src, root dest, and needed variables exist before proceeding
+    if [ \( -d "${src}" \) -a \( -d "${rootDest}" \) -a \( ! "${version}" = "" \) -a \( ! "${date}" = "" \) ] ; then
+        if [ "${DEBUG}" = "true" ] ; then
+            echo "publishTestArtifacts: Required locations and data verified... proceeding..."
+            echo "   src      = '${src}'"
+            echo "   rootDest = '${rootDest}'"
+            echo "   version  = '${version}'"
+            echo "   date     = '${date}'"
+        fi
+
+        #Mk download destination dir (dest/nightly/<version>/<date>)
+        downloadDest=${rootDest}/${version}/${date}
+        createPath ${downloadDest}
+
+        #count number of pages (html) exported, and copy them preserving date
+        srcZipCount=`ls ${src} | grep -c [.]zip$`
+        #track qualifier pattern in case multiple builds in one day
+        srcQualified=`ls ${src} | grep -m1 [.]zip$ | cut -d'.' -f4`
+        if [ ! "${srcZipCount}" = "0" ] ; then
+            if [ "${DEBUG}" = "true" ] ; then
+                echo "publishToolsArtifacts: Copying ${srcZipCount} zip(s)"
+                echo "                       from: '${src}'"
+                echo "                         to: '${downloadDest}'"
+            fi
+            cp --preserve=timestamps ${src}/*.zip ${downloadDest}/.
+        fi
+        # check number of appropriately qualified destination files
+        destZipCount=`ls ${downloadDest}/*${srcQualified}* | grep -c [.]zip$`
+        if [ "${DEBUG}" = "true" ] ; then
+            echo "publishToolsArtifacts: ${destZipCount} htmls copied."
+        fi
+
+        #verify everything copied correctly
+        if [ "${srcZipCount}" = "${destZipCount}" ] ; then
+            echo "    Published ${destZipCount} zip(s) successfully."
+            # can clean up.
+            rm -r ${src}
+        else
+            echo "    Publish failed for Test Results."
+            ERROR=true
+        fi
+    else
+        # Something is not right! skipping.."
+        echo "    Required locations and data failed to verify... skipping Test Artifact publishing...."
+        ERROR=true
+        if [ "${DEBUG}" = "true" ] ; then
+            echo "publishToolsArtifacts: Required locations and data:"
+            echo "   src       = '${src}'"
+            echo "   rootDest  = '${rootDest}'"
+            echo "   version   = '${version}'"
+            echo "   date      = '${date}'"
+            echo "   timestamp = '${timestamp}'"
+        fi
+    fi
+}
 
 #==========================
 #   Main Begins
@@ -635,7 +715,8 @@ for handoff in `ls handoff-file*.dat` ; do
            publishP2Repo ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${QUALIFIER}
        fi
        if [ "${PUB_SCOPE_EXPECTED}" -ge 1 ] ; then
-           publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}
+          echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}"
+          publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}
        fi
        if [ "${PUB_SCOPE_EXPECTED}" = "${PUB_SCOPE_COMPLETED}" ] ; then
            echo "Success: now deleting '${handoff}'"
@@ -650,17 +731,37 @@ for handoff in `ls handoff-file*.dat` ; do
            echo "    Deletion aborted..."
        fi
     else
-       publishTestArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE} ${HOST}
-       # Can combine when build publish complete.
-       if [ "${ERROR}" = "false" ] ; then
-           echo "Processing of '${handoff}' complete."
-           # remove handoff
-           echo "   Removing '${handoff}'."
-           rm ${handoff}
+       if [ "$PROC" = "test" ] ; then
+          publishTestArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE} ${HOST}
+          # Can combine when build publish complete.
+          if [ "${ERROR}" = "false" ] ; then
+              echo "Processing of '${handoff}' complete."
+              # remove handoff
+              echo "   Removing '${handoff}'."
+              rm ${handoff}
+          else
+              # Report error
+              echo "Error processing of '${handoff}'."
+              echo "    Deletion aborted..."
+          fi
        else
-           # Report error
-           echo "Error processing of '${handoff}'."
-           echo "    Deletion aborted..."
+          if [ "$PROC" = "tools" ] ; then
+             echo "TOOLS detected!"
+             publishToolsArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE}
+             # Can combine when build publish complete.
+             if [ "${ERROR}" = "false" ] ; then
+                 echo "Processing of '${handoff}' complete."
+                 # remove handoff
+                 echo "   Removing '${handoff}'."
+                 rm ${handoff}
+             else
+                 # Report error
+                 echo "Error processing of '${handoff}'."
+                 echo "    Deletion aborted..."
+             fi
+          else
+             echo "Unknown handoff type: '$PROC'"
+          fi
        fi
     fi
     echo "   Finished."
