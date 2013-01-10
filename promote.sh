@@ -198,10 +198,6 @@ validateGitRepo() {
     curdir=`pwd`
     cd ${RUNTIME_REPO}
 
-    # ensure repo is up-to-date
-    echo "Ensuring repo is up-to-date."
-    ${GIT_EXEC} pull
-
     # parse status of repo for current branch
     ststus_msg=`${GIT_EXEC} status`
     gitbranch=`echo $ststus_msg | grep -m1 "#" | cut -s -d' ' -f4`
@@ -228,11 +224,16 @@ validateGitRepo() {
 
     # verify switch took place
     if [ "$error_cnt" = "0" ] ; then
-        echo "Git Repo ready for promotion to continue..."
+        echo "Git Repo on correct branch for promotion to continue..."
     else
         echo "Error detected switching branches. exiting..."
         exit 1
     fi
+
+    # ensure repo is up-to-date
+    # has to occur after setting the correct banch because "git pull" only grabs changes on the active branch.
+    echo "Ensuring repo is up-to-date."
+    ${GIT_EXEC} pull
 
     cd $curdir
 }
