@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<!--/*******************************************************************************
+* This program and the accompanying materials are made available under the
+* terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
+* which accompanies this distribution.
+* The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
+* and the Eclipse Distribution License is available at
+* http://www.eclipse.org/org/documents/edl-v10.php.
+*
+*   Ant naming conventions:
+*   - regardless of the actual OS platform,'/' is the directory separator
+*     (Ant will convert as appropriate).
+*   - multi-word properties use periods '.'
+*     - properties ending in .jar define jarfile names only (no path)
+*     - properties ending in .lib are fully qualified jars (path and filename)
+*     - properties ending in .dir are directory paths
+*     - properties ending in .path are path refid names (classpath fragments)
+*   - multi-word targets use hyphens '-'
+*     - targets beginning with test- are reserved for high level test targets,
+*       and are used in test results parsing
+*     - targets typically use the form <action>-<object>-<type> (ie. package-bundle-zip)
+*   - multi-word macros use underscores '_'
+*   - multi-word macro attributes are concatinated
+*     e.g. 'runpathref'
+*   - multi-word tasks (taskdef) names are concatinated
+*     e.g. 'validateconnection'
+*   - OS environment variables are in ALLCAPS and have 'env' as a prefix
+*     e.g. ${env.XXX}.
+*   - Ant properties are lower case.
+*
+* Contributors:
+*     egwin    - initial implementation
+#******************************************************************************/-->
+<project name="eclipselink.archive.releases" default="generate-archives" basedir=".">
+    <available file="../updates" type="dir" property="updates.is.local"/>
+    <fail message="Not running from 'updates' directory." unless="updates.is.local"/>
+
+    <target name="init" >
+        <dirname  property="build.location_temp" file="${ant.file.eclipselink.archive.releases}"/>
+        <pathconvert targetos="unix" property="build.location">
+            <path>
+                <pathelement location="${build.location_temp}"/>
+            </path>
+        </pathconvert>
+        <echo message="build.location = '${build.location}'"/>
+
+        <!-- property name="custom.tasks.lib" value="${build.location}/ant_customizations.jar"/>
+        <property name="custom.say.task.class" value="org.eclipse.persistence.buildtools.ant.taskdefs.Say"/>
+        <taskdef name="say" classname="${custom.say.task.class}" classpath="${custom.tasks.lib}"/ -->
+
+        <property name="1.1.2" value="1.1.2.v20090612-r4475"/>
+        <property name="1.1.3" value="1.1.3.v20091002-r5404"/>
+        <property name="1.1.4" value="1.1.4.v20100812-r7860"/>
+        <property name="2.0.1" value="2.0.1.v20100213-r6600"/>
+        <property name="2.0.2" value="2.0.2.v20100323-r6872"/>
+        <property name="2.1.0" value="2.1.0.v20100614-r7608"/>
+        <property name="2.1.1" value="2.1.1.v20100817-r8050"/>
+        <property name="2.1.2" value="2.1.2.v20101206-r8635"/>
+        <property name="2.1.3" value="2.1.3.v20110304-r9073"/>
+        <property name="2.2.0" value="2.2.0.v20110202-r8913"/>
+        <property name="2.2.1" value="2.2.1.v20110722-r9776"/>
+        <property name="2.3.0" value="2.3.0.v20110604-r9504"/>
+        <property name="2.3.1" value="2.3.1.v20111018-r10243"/>
+        <property name="2.3.2" value="2.3.2.v20111125-r10461"/>
+        <property name="2.3.3" value="2.3.3.v20120629-r11760"/>
+        <property name="2.4.0" value="2.4.0.v20120608-r11652"/>
+        <property name="2.4.1" value="2.4.1.v20121003-ad44345"/>
+    </target>
+
+    <target name="archive-p2-child" if="${release}.ready">
+        <echo message="Creating archive '${release}.zip' of p2 child '${release}'..."/>
+        <delete file="${release}.zip" failonerror="false"/>
+        <zip destfile="${release}.zip">
+            <zipfileset dir="${release}">
+                <include name="**/*"/>
+            </zipfileset>
+        </zip>
+    </target>
+
+    <target name="generate-archives" depends="init">
+        <check_release releaseProperty="1.1.2"/>
+        <check_release releaseProperty="1.1.3"/>
+        <check_release releaseProperty="1.1.4"/>
+        <check_release releaseProperty="2.0.1"/>
+        <check_release releaseProperty="2.0.2"/>
+        <check_release releaseProperty="2.1.0"/>
+        <check_release releaseProperty="2.1.1"/>
+        <check_release releaseProperty="2.1.2"/>
+        <check_release releaseProperty="2.1.3"/>
+        <check_release releaseProperty="2.2.0"/>
+        <check_release releaseProperty="2.2.1"/>
+        <check_release releaseProperty="2.3.0"/>
+        <check_release releaseProperty="2.3.1"/>
+        <check_release releaseProperty="2.3.2"/>
+        <check_release releaseProperty="2.3.3"/>
+        <check_release releaseProperty="2.4.0"/>
+        <check_release releaseProperty="2.4.1"/>
+    </target>
+
+    <macrodef name="check_release">
+        <!-- release is the property name of the release -->
+        <attribute name="releaseProperty"/>
+        <sequential>
+            <echo message=" "/>
+            <echo message="Checking Release: @{releaseProperty} is '${@{releaseProperty}}'"/>
+            <condition property="${@{releaseProperty}}.ready">
+                <and>
+                    <available file="${build.location}/${@{releaseProperty}}" type="dir"/>
+                    <not>
+                        <available file="${build.location}/${@{releaseProperty}}.zip"/>
+                    </not>
+                </and>
+            </condition>
+            <!-- say message="Calling 'archive-p2-child' for '${@{releaseProperty}}' (Ready)"         if="${@{releaseProperty}}.ready"/>
+            <say message="Calling 'archive-p2-child' for '${@{releaseProperty}}' (Not-Ready)" unless="${@{releaseProperty}}.ready"/ -->
+            <antcall target="archive-p2-child">
+                <param name="release" value="${@{releaseProperty}}"/>
+            </antcall>
+        </sequential>
+    </macrodef>
+
+
+</project>
