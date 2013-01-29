@@ -1,6 +1,6 @@
 # !/bin/sh
 #****************************************************************************************
-# Copyright (c) 2010, 2012 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2010, 2013 Oracle and/or its affiliates. All rights reserved.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
 # which accompanies this distribution.
@@ -39,9 +39,7 @@ DNLD_DIR=/home/data/httpd/download.eclipse.org/rt/eclipselink
 JAVA_HOME=/shared/common/jdk-1.6.x86_64
 LOG_DIR=${HOME_DIR}/logs
 RELENG_REPO=${HOME_DIR}/eclipselink.releng
-
-#Files
-ANT_BLDFILE=publishbuild.xml
+RUNTIME_REPO=${HOME_DIR}/eclipselink.runtime
 
 #Global Variables
 PUB_SCOPE_EXPECTED=0
@@ -78,6 +76,42 @@ createPath() {
             fi
         fi
     done
+}
+
+checkoutCurrentBranch() {
+    local_repo=$1
+    desired_branch=$2
+
+    # make sure repo exists
+    if [ ! -d ${local_repo} ] ; then
+       echo "Error: Repo not found. exiting..."
+       exit 1
+    fi
+
+    #Must run git commands from Git repo dir so, store current dir, and switch to repo
+    current_dir=`pwd`
+    cd ${local_repo}
+
+    # switch to desired branch
+    ${GIT_EXEC} checkout ${desired_branch}
+    if [ "$?" = "0" ] ; then
+       # parse status of repo for current branch
+       current_branch=`${GIT_EXEC} status | grep -m1 "#" | cut -s -d' ' -f4`
+       #if debug
+       ## echo "Now on '${current_branch}' in '${local_repo}'"
+       ## echo "Git checkout complete."
+       if [ "${desired_branch}" = "${current_branch}" ] ; then
+          # get latest on branch
+          ##   has to occur after setting the correct banch because "git pull" only grabs changes on the active branch.
+          ${GIT_EXEC} pull
+       else
+          echo "Error detected switching branches. exiting..."
+          exit 1
+       fi
+    fi
+
+    # reset to original dir
+    cd $curdir
 }
 
 unset parseHandoff
@@ -498,14 +532,17 @@ publishMavenRepo() {
             ls -l ${src}/maven
         fi
 
+        # Ensure Latest branch specific upload scripts available
+        checkoutCurrentBranch ${RUNTIME_REPO} ${branch}
+
         #Invoke Antscript for Maven upload
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dcustom.tasks.lib=${RELENG_REPO}/ant_customizations.jar -Dversion.string=${version}.${qualifier}"
         arguments="${arguments} -Drelease.version=${version} -Dbuild.date=${blddate} -Dbuild.type=SNAPSHOT -Dbundle.dir=${src}/maven"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
-        echo "ant ${RELENG_REPO}/upload${branch}ToMaven.xml ${arguments}"
-        if [ -f ${RELENG_REPO}/upload${branch}ToMaven.xml ] ; then
-            ant -f ${RELENG_REPO}/upload${branch}ToMaven.xml ${arguments}
+        echo "ant ${RUNTIME_REPO}/uploadToMaven.xml ${arguments}"
+        if [ -f ${RUNTIME_REPO}/uploadToMaven.xml ] ; then
+            ant -f ${RUNTIME_REPO}/uploadToMaven.xml ${arguments}
             if [ "$?" = "0" ]
             then
                 echo "Maven publish complete."
@@ -514,7 +551,7 @@ publishMavenRepo() {
                 error_cnt=`expr ${error_cnt} + 1`
             fi
         else
-            echo "${RELENG_REPO}/upload${branch}ToMaven.xml doesn't exist. Aborting ant run..."
+            echo "${RUNTIME_REPO}/uploadToMaven.xml doesn't exist. Aborting ant run..."
             error_cnt=`expr ${error_cnt} + 1`
         fi
         if [ "$error_cnt" = "0" ]
@@ -686,6 +723,24 @@ DEBUG=false
 if [ -n "$ARG1" ] ; then
     DEBUG=true
     echo "Debug is on!"
+fi
+
+#==========================
+#     Define Environment
+#
+GIT_EXEC=/usr/local/bin/git
+if [ ! -x ${GIT_EXEC} ] ; then
+    echo "Cannot find Git executable using default value '$GIT_EXEC'. Attempting Autofind..."
+    GIT_EXEC=`which git`
+    if [ $? -ne 0 ] ; then
+        echo "Error: Unable to find GIT executable! Git functionality disabled."
+        GIT_EXEC=false
+        exit 1
+    else
+        echo "Found: ${GIT_EXEC}"
+    fi
+else
+    echo "Found: ${GIT_EXEC}"
 fi
 
 #==========================
