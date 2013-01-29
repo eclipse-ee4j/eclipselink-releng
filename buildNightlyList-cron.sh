@@ -152,6 +152,35 @@ validateSummaryFile() {
     fi
 }
 
+unset promoteLatestToolsBuild
+promoteLatestToolsBuild() {
+    #save current dir
+    savdir=`pwd`
+    #change to "version" dir
+    cd ${BaseDownloadNFSDir}/nightly/${version}
+
+    #for each date dir oldest to newest
+    for builddate in `ls -d [0-9]*` ; do
+        #if contains  a "Tools archive" set "latest" (datedir/filename)
+        filenm=`ls ${builddate} | sort -r | grep -m1 eclipselink-tools-[0-9]`
+        if [ "${filenm}" != "" ] ; then
+            #echo "Setting latestToolsArchive: '${builddate}/${filenm}'"
+            latestToolsArchive=${builddate}/${filenm}
+        else
+            #echo "${builddate}: no Tools Archive"
+            #if "latest" set, copy it to current build dir
+            filenm=`echo ${latestToolsArchive} | grep -m1 eclipselink-tools-[0-9]`
+            if [ "${filenm}" != "" ] ; then
+            #    echo "    cp ${latestToolsArchive} ${builddate}/."
+                cp ${latestToolsArchive} ${builddate}/.
+            fi
+        fi
+    done
+
+    #restore original location
+    cd ${savdir}
+}
+
 buildir=/shared/rt/eclipselink
 cd ${buildir}
 
@@ -229,6 +258,12 @@ echo "      </p>" >> $tmp/index.xml
 curdir=`pwd`
 for version in `ls -dr [0-9]*` ; do
     cd ${BaseDownloadNFSDir}/nightly/${version}
+    # if version is 2.5 or greater (only try once per version)
+    if [ `expr "$version" \> "2.5"` = 1 ] ; then
+        # Promote the latest tools builds
+        promoteLatestToolsBuild
+    fi
+
     echo "      <p>                                                                              " >> $tmp/index.xml
     echo "      <a name=\"${version}\"> </a>                                                     " >> $tmp/index.xml
     echo "        <table border=\"1\">                                                           " >> $tmp/index.xml
