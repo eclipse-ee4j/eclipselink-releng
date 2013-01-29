@@ -180,15 +180,6 @@ parseBuild() {
     fi
 }
 
-unset getCurrentGitBranch
-getCurrentGitBranch() {
-    # parse status of repo for current branch
-    ststus_msg=`${GIT_EXEC} status`
-    gitbranch=`echo $ststus_msg | grep -m1 "#" | cut -s -d' ' -f4`
-
-    return $gitbranch
-}
-
 unset validateGitRepo
 validateGitRepo() {
 
