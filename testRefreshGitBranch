@@ -1,0 +1,68 @@
+# !/bin/sh
+
+BRANCH=$1
+HOME_DIR=/shared/rt/eclipselink
+RELENG_REPO=${HOME_DIR}/eclipselink.releng
+RUNTIME_REPO=${HOME_DIR}/eclipselink.runtime
+
+checkoutCurrentBranch() {
+    local_repo=$1
+    desired_branch=$2
+
+    # make sure repo exists
+    if [ ! -d ${local_repo} ] ; then
+       echo "Error: Repo not found. exiting..."
+       exit 1
+    fi
+
+    #Must run git commands from Git repo dir so, store current dir, and switch to repo
+    current_dir=`pwd`
+    cd ${local_repo}
+
+    # switch to desired branch
+    ${GIT_EXEC} checkout ${desired_branch}
+    if [ "$?" = "0" ] ; then
+       # parse status of repo for current branch
+       current_branch=`${GIT_EXEC} status | grep -m1 "#" | cut -s -d' ' -f4`
+       #if debug
+       ## echo "Now on '${current_branch}' in '${local_repo}'"
+       ## echo "Git checkout complete."
+       if [ "${desired_branch}" = "${current_branch}" ] ; then
+          # get latest on branch
+          ##   has to occur after setting the correct banch because "git pull" only grabs changes on the active branch.
+          ${GIT_EXEC} pull
+       else
+          echo "Error detected switching branches. exiting..."
+          exit 1
+       fi
+    fi
+
+    # reset to original dir
+    cd $curdir
+}
+
+
+#
+#   MAIN
+
+
+#==========================
+#     Define Environment
+#
+GIT_EXEC=/usr/local/bin/git
+if [ ! -x ${GIT_EXEC} ] ; then
+    echo "Cannot find Git executable using default value '$GIT_EXEC'. Attempting Autofind..."
+    GIT_EXEC=`which git`
+    if [ $? -ne 0 ] ; then
+        echo "Error: Unable to find GIT executable! Git functionality disabled."
+        GIT_EXEC=false
+        exit 1
+    else
+        echo "Found: ${GIT_EXEC}"
+    fi
+else
+    echo "Found: ${GIT_EXEC}"
+fi
+
+
+checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH}

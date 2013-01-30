@@ -1,0 +1,43 @@
+# !/bin/sh
+
+BaseDownloadNFSDir="/home/data/httpd/download.eclipse.org/rt/eclipselink"
+version=2.5.0
+
+unset promoteLatestToolsBuild
+promoteLatestToolsBuild() {
+    #save current dir
+    savdir=`pwd`
+    #change to "version" dir
+    cd ${BaseDownloadNFSDir}/nightly/${version}
+
+    #for each date dir oldest to newest
+    for builddate in `ls -d [0-9]*` ; do
+        #if contains  a "Tools archive" set "latest" (datedir/filename)
+        file=`ls ${builddate} | sort -r | grep -m1 eclipselink-tools-[0-9]`
+        if [ "${file}" != "" ] ; then
+            #echo "Setting latestToolsArchive: '${builddate}/${file}'"
+            latestToolsArchive=${builddate}/${file}
+        else
+            #echo "${builddate}: no Tools Archive"
+            #if "latest" set, copy it to current build dir
+            file=`echo ${latestToolsArchive} | grep -m1 eclipselink-tools-[0-9]`
+            if [ "${file}" != "" ] ; then
+            #    echo "    cp ${latestToolsArchive} ${builddate}/."
+                cp ${latestToolsArchive} ${builddate}/.
+            fi
+        fi
+    done
+
+    #restore original location
+    cd ${savdir}
+}
+
+
+#
+#   MAIN
+
+cd ${BaseDownloadNFSDir}/nightly/${version}
+cd 20130129
+echo "Current Dir: `pwd`"
+promoteLatestToolsBuild
+echo "Current Dir: `pwd`"
