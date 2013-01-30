@@ -44,6 +44,7 @@ RUNTIME_REPO=${HOME_DIR}/eclipselink.runtime
 #Global Variables
 PUB_SCOPE_EXPECTED=0
 PUB_SCOPE_COMPLETED=0
+MASTER_BRANCH_VERSION=2.5
 
 PATH=${JAVA_HOME}/bin:${ANT_HOME}/bin:/usr/bin:/usr/local/bin:${PATH}
 
@@ -78,6 +79,7 @@ createPath() {
     done
 }
 
+unset checkoutCurrentBranch
 checkoutCurrentBranch() {
     local_repo=$1
     desired_branch=$2
@@ -533,7 +535,11 @@ publishMavenRepo() {
         fi
 
         # Ensure Latest branch specific upload scripts available
-        checkoutCurrentBranch ${RUNTIME_REPO} ${branch}
+        if [ "${MASTER_BRANCH_VERSION}" = "${branch}" ] ; then
+            checkoutCurrentBranch ${RUNTIME_REPO} master
+        else
+            checkoutCurrentBranch ${RUNTIME_REPO} ${branch}
+        fi
 
         #Invoke Antscript for Maven upload
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dcustom.tasks.lib=${RELENG_REPO}/ant_customizations.jar -Dversion.string=${version}.${qualifier}"
