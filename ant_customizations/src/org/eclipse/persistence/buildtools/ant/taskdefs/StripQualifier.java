@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013 Oracle and/or its affiliates. All rights reserved.
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
  * which accompanies this distribution.
@@ -7,13 +7,12 @@
  * and the Eclipse Distribution License is available at
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
- * ToLower
- *     input    - String to convert to lowercase
- *     property - Property to store the results in
+ * StripQualifier
+ *    input    - "version" to reduce to 3-part equivilent
+ *    property - Property to store the results in
  *
  * Contributors:
  *     egwin - initial conception and implementation
- *     egwin - minor cleanup to documentation and formating
  */
 
 package org.eclipse.persistence.buildtools.ant.taskdefs;
@@ -21,10 +20,13 @@ package org.eclipse.persistence.buildtools.ant.taskdefs;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
+import org.eclipse.persistence.buildtools.helper.Version;
+//import org.eclipse.persistence.buildtools.helper.VersionException;
 
-public class ToLower extends Task {
-    private String input = null;
-    private String property = null;
+public class StripQualifier extends Task {
+    private String input    = null;    // Version String to reduce to 3-part version
+    private String property = null;    // Name of Property to set with stripped value
+    private Version version = null;    // local: storage for version to strip
 
     public void execute() throws BuildException {
         if (input == null) {
@@ -38,13 +40,18 @@ public class ToLower extends Task {
         }
         if ( input.startsWith("${") || input.startsWith("@{") || input == "" ) {
             // If input empty or unexpanded then set value of property to 'NA'
-            log("ToLower Finished.  Input empty or search failed! original value was '" + input + "'.", Project.MSG_VERBOSE);
+            log("StripQualifier finished.  Input empty or search failed! original value was '" + input + "'.", Project.MSG_VERBOSE);
             throw new BuildException("'input' is empty, or a property value cannot be expanded.", getLocation());
         }
         else {
-            // put result into property - NB overwrites previous value! Not safe for <parallel> tasks
-            getProject().setProperty( property, input.toLowerCase());
-            log("ToLower Finished. Old string of '" + input + "' set to '" + input.toLowerCase() + "' in property '" + property + "'.", Project.MSG_VERBOSE);
+            // put result into property - overwrites previous value! Not safe for <parallel> tasks
+            //try {
+                version = new Version(input);
+            //} catch ( VersionException e){
+            //    log("stripQualifier: Exception detected -> " + e, Project.MSG_VERBOSE);
+            //}
+           	getProject().setProperty( property, version.get3PartStr() );
+            log("StripQualifier finished. Old string of '" + input + "' set to '" + version.get3PartStr() + "' in property '" + property + "'.", Project.MSG_VERBOSE);
         }
     }
 

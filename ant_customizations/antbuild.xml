@@ -42,7 +42,7 @@
         <property name="classes.dir" value="${output.dir}/classes"/>
         <property name="custom.jar"  value="ant_customizations.jar"/>
         <property name="custom.lib"  value="${output.dir}/${custom.jar}"/>
-        
+
         <echo message="publish.dir                              ='${publish.dir}'"/>
         <echo message="output.dir                               ='${output.dir}'"/>
         <echo message="src.dir                                  ='${src.dir}'"/>
@@ -93,24 +93,26 @@
     <target name="publish" depends="init, pub_init, archive-old">
         <copy file="${custom.lib}" todir="${publish.dir}"/>
     </target>
-    
+
     <!-- TESTING TARGETS -->
-    <target name="test" depends="test-init, test-version-class, test-selectbundle, test-cleanRevision"/>
+    <target name="test" depends="test-init, test-version-class, test-selectbundle, test-cleanRevision, test-stripQualifier"/>
 
     <target name="test-init" depends="init">
-        <property name="custom.tasks.lib" value="${publish.dir}/ant_customizations.jar"/>
-        <property name="custom.echo.task.class" value="org.eclipse.persistence.buildtools.ant.taskdefs.Say"/>
-        <property name="custom.selectbundle.task.class" value="org.eclipse.persistence.buildtools.ant.taskdefs.SelectBundle"/>
-        <property name="custom.cleanrev.task.class" value="org.eclipse.persistence.buildtools.ant.taskdefs.CleanRevision"/>
+        <property name="custom.tasks.lib"                 value="${publish.dir}/ant_customizations.jar"/>
+        <property name="custom.echo.task.class"           value="org.eclipse.persistence.buildtools.ant.taskdefs.Say"/>
+        <property name="custom.selectbundle.task.class"   value="org.eclipse.persistence.buildtools.ant.taskdefs.SelectBundle"/>
+        <property name="custom.cleanrev.task.class"       value="org.eclipse.persistence.buildtools.ant.taskdefs.CleanRevision"/>
+        <property name="custom.stripqualifier.task.class" value="org.eclipse.persistence.buildtools.ant.taskdefs.StripQualifier"/>
 
         <echo message="custom.tasks.lib = '${custom.tasks.lib}'"/>
         <available file="${custom.tasks.lib}" property="antcustomizations.lib.exist"/>
         <fail message="Ant customizations file not found!" unless="antcustomizations.lib.exist"/>
 
-        <taskdef name="say"          classname="${custom.echo.task.class}"         classpath="${custom.tasks.lib}"/>
-        <taskdef name="selectbundle" classname="${custom.selectbundle.task.class}" classpath="${custom.tasks.lib}"/>
-        <taskdef name="cleanRevision" classname="${custom.cleanrev.task.class}"    classpath="${custom.tasks.lib}"/>
-        
+        <taskdef name="say"            classname="${custom.echo.task.class}"           classpath="${custom.tasks.lib}"/>
+        <taskdef name="selectbundle"   classname="${custom.selectbundle.task.class}"   classpath="${custom.tasks.lib}"/>
+        <taskdef name="cleanRevision"  classname="${custom.cleanrev.task.class}"       classpath="${custom.tasks.lib}"/>
+        <taskdef name="stripQualifier" classname="${custom.stripqualifier.task.class}" classpath="${custom.tasks.lib}"/>
+
         <say message=" First test is passed. Customizations found and 'say' works!" if="antcustomizations.lib.exist"/>
     </target>
 
@@ -138,16 +140,16 @@
         <property name="bnd.criteria"     value="[0.0.350, 0.1.0)"/>
         <property name="bnd.property"     value="selected.bnd.jar"/>
         <property name="bnd.property2"    value="selected.bnd.lib"/>
-        
+
         <property name="xmlbind.prefix"     value="javax.xml.bind"/>
         <property name="xmlbind.criteria"   value="[2.0, 3.0)"/>
         <property name="xmlbind.property"   value="selected.xmlbind.jar"/>
-        
+
         <property name="ant.prefix"           value="org.apache.ant"/>
         <property name="ant.criteria"         value="[1.7, 1.8)"/>
         <property name="ant.property"         value="selected.ant.jar"/>
         <property name="ant.version.property" value="selected.ant.version"/>
-        
+
         <property name="jpa.prefix"      value="javax.persistence"/>
         <property name="jpa.criteria"    value="[1.0, 2.2)"/>
         <property name="jpa.property"    value="selected.jpa.jar"/>
@@ -179,7 +181,7 @@
         <say message="selected file: '${selected.bnd.jar}'" if="${bnd.property}"/>
         <say message="Bnd (${bnd.prefix}) bundle not found in '${bnd.search.dir}'!" unless="${bnd.property}"/>
         <say message="If not found bdn.property was overwritten by second search in '..'"/>
-        
+
         <say message=" "/>
         <say message="Test includepath flag using bnd..."/>
         <selectbundle
@@ -192,7 +194,7 @@
         />
         <say message="selected file: '${selected.bnd.lib}'" if="${bnd.property2}"/>
         <say message="Bnd (${bnd.prefix}) bundle not found in '${bnd.search.dir}'!" unless="${bnd.property2}"/>
-        
+
         <say message=" "/>
         <say message="Test finding ${xmlbind.prefix} (using default separator)..."/>
         <selectbundle
@@ -273,7 +275,7 @@
         <property name="svn.base.urlpath"    value="//${svn.server.name}/svnroot/rt/org.eclipse.persistence"/>
         <property name="svn.base.url"        value="${svn.r.protocol}${svn.base.urlpath}"/>
         <property name="svn.branch.url"      value="${svn.base.url}/${branch.dir}"/>
-        
+
         <exec outputproperty="svn.revision"
             failonerror="false"
             failifexecutionfails="false"
@@ -290,5 +292,45 @@
         <cleanRevision input="${svn.revision}" property="svn.revision"/>
         <say message="a:svn.revision = '${svn.revision}'"/>
     </target>
+
+    <target name="test-stripQualifier" depends="test-init">
+        <say message=" "/>
+        <say message="Test removing qualifier from '1.2.0.test'..."/>
+        <stripQualifier
+            input="1.2.0.test"
+            property="120test.value"
+        />
+        <say message="    Result: '${120test.value}'" if="120test.value"/>
+        <say message="    Result: Property '120test.value' not set (error)." unless="120test.value"/>
+
+        <say message=" "/>
+        <say message="Test removing qualifier from '2'..."/>
+        <stripQualifier
+            input="2"
+            property="2test.value"
+        />
+        <say message="    Result: '${2test.value}'" if="2test.value"/>
+        <say message="    Result: Property '2test.value' not set (error)." unless="2test.value"/>
+
+        <say message=" "/>
+        <say message="Test removing qualifier from '4.1'..."/>
+        <stripQualifier
+            input="4.1"
+            property="41test.value"
+        />
+        <say message="    Result: '${41test.value}'" if="41test.value"/>
+        <say message="    Result: Property '41test.value' not set (error)." unless="41test.value"/>
+
+        <say message=" "/>
+        <say message="Test removing qualifier from '5.3.1'..."/>
+        <stripQualifier
+            input="5.3.1"
+            property="531test.value"
+        />
+        <say message="    Result: '${531test.value}'" if="531test.value"/>
+        <say message="    Result: Property '531test.value' not set (error)." unless="531test.value"/>
+
+    </target>
+
 
 </project>

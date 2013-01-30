@@ -37,12 +37,12 @@ public class Version {
         boolean error=false;
 
         // clear leading whitespace
-        while ( validated.startsWith(" ") || validated.startsWith("\t") ) 
+        while ( validated.startsWith(" ") || validated.startsWith("\t") )
             validated=validated.substring(1);
         // clear trailing whitespace
-        while ( validated.endsWith(" ") || validated.endsWith("\t") ) 
+        while ( validated.endsWith(" ") || validated.endsWith("\t") )
             validated=validated.substring(0,validated.length() - 1);
-        
+
         if ( validated.startsWith(".") ) {
             throw new VersionException("Initial version tokenizer found (.): Invalid version string '" + validated + "'.");
         }
@@ -108,7 +108,7 @@ public class Version {
         } catch ( NumberFormatException e){
             throw new VersionException("Major.Minor.Micro tokens expected to be numeric. One or more is invalid. " + e.getMessage() + " in \"" + identifier + "\".", e);
         }
-        String validIdentifier = getMajorStr() + "." + getMinorStr() + "." + getMicroStr();
+        String validIdentifier = get3PartStr();
         if(getQualifier() != null && getQualifier() != "" ) {
             validIdentifier+= "." + getQualifier();
         }
@@ -130,6 +130,7 @@ public class Version {
     public Integer getMinorInt() {
         return this.minor;
     }
+    // Micro also referred to as "bugfix" token of version
     public Integer getMicroInt() {
         return this.micro;
     }
@@ -141,6 +142,9 @@ public class Version {
     }
     public String getMicroStr() {
         return this.micro.toString();
+    }
+    public String get3PartStr() {
+        return getMajorStr() + "." + getMinorStr() + "." + getMicroStr();
     }
     public String getQualifier() {
         return this.qualifier;
