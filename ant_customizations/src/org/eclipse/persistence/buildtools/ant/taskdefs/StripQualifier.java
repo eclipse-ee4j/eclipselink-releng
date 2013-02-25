@@ -44,14 +44,19 @@ public class StripQualifier extends Task {
             throw new BuildException("'input' is empty, or a property value cannot be expanded.", getLocation());
         }
         else {
-            // put result into property - overwrites previous value! Not safe for <parallel> tasks
-            //try {
+            // verify property not already set
+            if ( getProject().getProperty(property) == null ) {
+                // put result into property - Not safe for <parallel> tasks
+                //try {
                 version = new Version(input);
-            //} catch ( VersionException e){
-            //    log("stripQualifier: Exception detected -> " + e, Project.MSG_VERBOSE);
-            //}
-           	getProject().setProperty( property, version.get3PartStr() );
-            log("StripQualifier finished. Old string of '" + input + "' set to '" + version.get3PartStr() + "' in property '" + property + "'.", Project.MSG_VERBOSE);
+                //} catch ( VersionException e){
+                //    log("stripQualifier: Exception detected -> " + e, Project.MSG_VERBOSE);
+                //}
+                getProject().setProperty( property, version.get3PartStr() );
+                log("StripQualifier finished. Old string of '" + input + "' set to '" + version.get3PartStr() + "' in property '" + property + "'.", Project.MSG_VERBOSE);
+            } else {
+                log("StripQualifier finished. Property '" + property + "' already set to '" + getProject().getProperty(property) + "'. Skipping.", Project.MSG_VERBOSE);
+            }
         }
     }
 
