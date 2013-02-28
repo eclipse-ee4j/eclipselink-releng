@@ -25,8 +25,13 @@
 #
 
 #Define common variables
-ARG1=$1
+THIS=$0
+PROGNAME=`basename ${THIS}`
 umask 0002
+#USER=$1
+#PASSWD=$2
+DEBUG_ARG=$1
+
 ANT_ARGS=" "
 ANT_OPTS="-Xmx512m"
 START_DATE=`date '+%y%m%d-%H%M'`
@@ -41,6 +46,9 @@ LOG_DIR=${HOME_DIR}/logs
 RELENG_REPO=${HOME_DIR}/eclipselink.releng
 RUNTIME_REPO=${HOME_DIR}/eclipselink.runtime
 
+#ANT Invokation Variables
+BUILDFILE=${RUNTIME_REPO}/uploadToMaven.xml
+
 #Global Variables
 PUB_SCOPE_EXPECTED=0
 PUB_SCOPE_COMPLETED=0
@@ -53,6 +61,14 @@ export ANT_ARGS ANT_OPTS ANT_HOME HOME_DIR JAVA_HOME LOG_DIR PATH
 #==========================
 #   Functions Definitions
 #
+unset usage
+usage() {
+    echo "Usage: ${PROGNAME} USER PASSWD [debug]"
+    echo "   USER      - user to publish artifacts to maven"
+    echo "   PASSWD    - password for maven user"
+    echo "   DEBUG_ARG - if defined, designates a run should be 'debug'."
+}
+
 unset createPath
 createPath() {
     # Usage: createPath path
@@ -349,6 +365,7 @@ publishBuildArtifacts() {
         if [ \( "${srcJarCount}" = "${destJarCount}" \) -a \( "${srcZipCount}" = "${destZipCount}" \) ] ; then
             echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s) successfully."
             PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} + 100`
+            NEW_WEB_ARTIFACTS=true
         else
             echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s), but Src and Dest numbers don't match."
             echo "    Expected ${srcJarCount} jar(s) and ${srcZipCount} zip(s) to copy. Publish failed!"
@@ -419,6 +436,7 @@ publishP2Repo() {
                 if [ "${destP2jarCount}" = "${srcP2jarCount}" ] ; then
                     echo "    Published ${destP2jarCount} of ${srcP2jarCount} jars to repo successfully."
                     PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} + 10`
+                    NEW_P2=true
                 else
                     echo "    Publish failed for P2 Repo. Only copied ${destP2jarCount} of ${srcP2jarCount} jars to repo."
                     ERROR=true
@@ -544,11 +562,12 @@ publishMavenRepo() {
         #Invoke Antscript for Maven upload
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dcustom.tasks.lib=${RELENG_REPO}/ant_customizations.jar -Dversion.string=${version}.${qualifier}"
         arguments="${arguments} -Drelease.version=${version} -Dbuild.date=${blddate} -Dbuild.type=SNAPSHOT -Dbundle.dir=${src}/maven"
+        #arguments="${arguments} -Drepository.username=${USER} -Drepository.userpass=${PASSWD}"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
-        echo "ant ${RUNTIME_REPO}/uploadToMaven.xml ${arguments}"
-        if [ -f ${RUNTIME_REPO}/uploadToMaven.xml ] ; then
-            ant -f ${RUNTIME_REPO}/uploadToMaven.xml ${arguments}
+        echo "ant ${BUILDFILE} ${arguments}"
+        if [ -f ${BUILDFILE} ] ; then
+            ant -f ${BUILDFILE} ${arguments}
             if [ "$?" = "0" ]
             then
                 echo "Maven publish complete."
@@ -633,6 +652,7 @@ publishTestArtifacts() {
             echo "    Published ${destHtmlCount} html(s) successfully."
             # can clean up.
             rm -r ${src}
+            NEW_WEB_ARTIFACTS=true
         else
             echo "    Publish failed for Test Results."
             ERROR=true
@@ -700,6 +720,7 @@ publishToolsArtifacts() {
             echo "    Published ${destZipCount} zip(s) successfully."
             # can clean up.
             rm -r ${src}
+            NEW_WEB_ARTIFACTS=true
         else
             echo "    Publish failed for Test Results."
             ERROR=true
@@ -723,10 +744,23 @@ publishToolsArtifacts() {
 #   Main Begins
 #
 #==========================
-#  If anything is in ARG1 then do a dummy "DEBUG"
+#   Validate run parameters
+#if [ "${USER}" = "" ] ; then
+#    usage
+#    echo " "
+#    echo "USER not specified! Exiting..."
+#    exit 1
+#fi
+#if [ "${PASSWD}" = "" ] ; then
+#    usage
+#    echo " "
+#    echo "PASSWD not specified! Exiting..."
+#    exit 1
+#fi
+#  If anything is in DEBUG_ARG then do a dummy "DEBUG" run
 #  run (Don't call ant, don't remove handoff, do report variable states
 DEBUG=false
-if [ -n "$ARG1" ] ; then
+if [ -n "$DEBUG_ARG" ] ; then
     DEBUG=true
     echo "Debug is on!"
 fi
@@ -734,6 +768,7 @@ fi
 #==========================
 #     Define Environment
 #
+#==========================
 GIT_EXEC=/usr/local/bin/git
 if [ ! -x ${GIT_EXEC} ] ; then
     echo "Cannot find Git executable using default value '$GIT_EXEC'. Attempting Autofind..."
@@ -752,9 +787,12 @@ fi
 #==========================
 #     Test for handoff
 #        if not exit with minimal work done.
+#==========================
 curdir=`pwd`
 cd $HOME_DIR
 NEW_RESULTS=false
+NEW_P2=false
+NEW_WEB_ARTIFACTS=false
 ERROR=false
 handoff_cnt=0
 for handoff in `ls handoff-file*.dat` ; do
@@ -783,6 +821,7 @@ for handoff in `ls handoff-file*.dat` ; do
            echo "Success: now deleting '${handoff}'"
            echo "TODO: also should delete '${BUILD_ARCHIVE_LOC}' but need to make sure tests export to different area first"
            rm ${handoff}
+           NEW_RESULTS=true
        else
            if [ "${DEBUG}" = "true" ] ; then
                echo "PUB_SCOPE_EXPECTED  = '${PUB_SCOPE_EXPECTED}'"
@@ -830,16 +869,19 @@ done
 echo "Completed processing of all (${handoff_cnt}) handoff files."
 if [ "${NEW_RESULTS}" = "true" ] ; then
     # clean up old artifacts
-    echo "Could now run '${EXEC_DIR}/cleanNightly.sh' to remove old artifacts."
-    # Will need to accumulate branches effected in this run before can know which ones to clean
+    echo "Could now run './${RELENG_REPO}/cleanNightly.sh' to remove old artifacts."
+    echo "   but will need to accumulate branches effected in this run before can know which ones to clean."
     # regen web
-    echo "Could now run '${EXEC_DIR}/buildNightlyList-cron.sh' to regenerate nightly download page."
+fi
+if [ "${NEW_WEB_ARTIFACTS}" = "true" ] ; then
+    echo "Now running './${RELENG_REPO}/buildNightlyList-cron.sh' to regenerate nightly download page."
+    ./${RELENG_REPO}/buildNightlyList-cron.sh
+fi
+if [ "${NEW_P2}" = "true" ] ; then
     # regen P2 composite
-    echo "Could now run '${EXEC_DIR}/buildCompositeP2.sh' to rebuild composite P2."
-    #regen composite repo after new child copied.
-    echo "TODO: regen composite at ${downloadDest}"
     if [ -f ${EXEC_DIR}/buildCompositeP2.sh ] ; then
-        ./buildCompositeP2.sh ${rootDest} "&quot;EclipseLink Nightly Build Repository&quot;"
+        echo "Now running './${RELENG_REPO}/buildCompisiteP2.sh nightly' to rebuild composite metadata for the nightly P2 repo."
+        ./${RELENG_REPO}/buildCompisiteP2.sh nightly
     fi
 fi
 echo "Publish complete."
