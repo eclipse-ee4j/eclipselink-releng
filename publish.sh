@@ -874,14 +874,20 @@ if [ "${NEW_RESULTS}" = "true" ] ; then
     # regen web
 fi
 if [ "${NEW_WEB_ARTIFACTS}" = "true" ] ; then
-    echo "Now running './${RELENG_REPO}/buildNightlyList-cron.sh' to regenerate nightly download page."
-    ./${RELENG_REPO}/buildNightlyList-cron.sh
+    if [ -f ${RELENG_REPO}/buildNightlyList-cron.sh ] ; then
+        echo "Now running '${RELENG_REPO}/buildNightlyList-cron.sh' to regenerate nightly download page."
+        ${RELENG_REPO}/buildNightlyList-cron.sh
+    else
+        echo "cannot find '${RELENG_REPO}/buildNightlyList-cron.sh' to run."
+    fi
 fi
 if [ "${NEW_P2}" = "true" ] ; then
     # regen P2 composite
-    if [ -f ${EXEC_DIR}/buildCompositeP2.sh ] ; then
-        echo "Now running './${RELENG_REPO}/buildCompisiteP2.sh nightly' to rebuild composite metadata for the nightly P2 repo."
-        ./${RELENG_REPO}/buildCompisiteP2.sh nightly
+    if [ -f ${RELENG_REPO}/buildCompositeP2.sh ] ; then
+        echo "Now running '${RELENG_REPO}/buildCompositeP2.sh nightly' to rebuild composite metadata for the nightly P2 repo."
+        ${RELENG_REPO}/buildCompositeP2.sh nightly
+    else
+        echo "cannot find '${RELENG_REPO}/buildCompositeP2.sh' to run."
     fi
 fi
 echo "Publish complete."
