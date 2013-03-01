@@ -31,7 +31,7 @@ umask 0002
 BUILD=$1
 MILESTONE=$2
 BRANCH_NM=$3
-ARG4=$4
+DEBUG_ARG=$4
 
 ANT_ARGS=" "
 ANT_OPTS="-Xmx512m"
@@ -47,16 +47,12 @@ LOG_DIR=${HOME_DIR}/logs
 RELENG_REPO=${HOME_DIR}/eclipselink.releng
 RUNTIME_REPO=${HOME_DIR}/eclipselink.runtime
 
-#Files
+#ANT Invokation Variables
 BUILDFILE=${RUNTIME_REPO}/autobuild.xml
+ANT_TARGET=build-milestone
 
 #Global Variables
 RELEASE=false
-ANT_TARGET=build-milestone
-
-#  If anything is in ARG4 then do a dummy "DEBUG" run
-#  (Do not call ant, do not modify or create files, do report variable states)
-DEBUG=false
 
 PATH=${JAVA_HOME}/bin:${ANT_HOME}/bin:/usr/bin:/usr/local/bin:${PATH}
 
@@ -67,14 +63,14 @@ export ANT_ARGS ANT_OPTS ANT_HOME HOME_DIR JAVA_HOME LOG_DIR PATH
 #
 unset usage
 usage() {
-    echo "Usage: ./promote.sh (BUILD |'release') MILESTONE BRANCH_NM [debug]"
-    echo "  BUILD     - full build identifier, or 'release' (example: 2.4.1.v201209013-98ef31a). Used to generate branch,"
-    echo "              version, date and hash info needed. If 'release', tells promote to release the specified"
-    echo "              MILESTONE."
-    echo "  MILESTONE - a milestone (exampe: M4) to promote the specified build to. Also used in dir storage, and maven."
-    echo "              storage, and Maven publishing."
-    echo "  BRANCH_NM - The git branchname for the branch the build was based upon (Example: master, 2.4, 2.3, etc.)"
-    echo "  ARG4      - if defined, designates a run should be 'debug'."
+    echo "Usage: ${PROGNAME} (BUILD |'release') MILESTONE BRANCH_NM [debug]"
+    echo "   BUILD     - full build identifier, or 'release' (example: 2.4.1.v201209013-98ef31a). Used to generate branch,"
+    echo "               version, date and hash info needed. If 'release', tells promote to release the specified"
+    echo "               MILESTONE."
+    echo "   MILESTONE - a milestone (exampe: M4) to promote the specified build to. Also used in dir storage, and maven."
+    echo "               storage, and Maven publishing."
+    echo "   BRANCH_NM - The git branchname for the branch the build was based upon (Example: master, 2.4, 2.3, etc.)"
+    echo "   DEBUG_ARG - if defined, designates a run should be 'debug'."
 }
 
 unset createPath
@@ -96,7 +92,7 @@ createPath() {
             mkdir ${newdir}
             if [ $? -ne 0 ]
             then
-                echo "   createPath:  Error, creation of ${newdir} failed!"
+                echo "   Error (createPath):  Creation of ${newdir} failed!"
                 exit
             fi
         fi
@@ -372,6 +368,7 @@ callAnt() {
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dreleng.repo.dir=${RELENG_REPO} -Dgit.exec=${GIT_EXEC}"
         arguments="${arguments} -Dbranch.name=${branch_nm} -Drelease.version=${version} -Dbuild.type=${milestone} -Dbranch=${branch}"
         arguments="${arguments} -Dversion.qualifier=${qualifier} -Dbuild.date=${blddate} -Dgit.hash=${githash}"
+#        arguments="${arguments} -Drepository.username=${USER} -Drepository.userpass=${PASSWD}"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
         echo "pwd='`pwd`"
@@ -428,15 +425,27 @@ if [ "${BRANCH_NM}" = "" ] ; then
     echo "BRANCH_NM not specified! Exiting..."
     exit 1
 fi
-#  If anything is in ARG4 then do a dummy "DEBUG" run
+#if [ "${USER}" = "" ] ; then
+#    echo " "
+#    echo "USER not specified! Exiting..."
+#    exit 1
+#fi
+#if [ "${PASSWD}" = "" ] ; then
+#    usage
+#    echo " "
+#    echo "PASSWD not specified! Exiting..."
+#    exit 1
+#fi
+#  If anything is in DEBUG_ARG then do a dummy "DEBUG" run
 #  (Do not call ant, do not modify or create files, do report variable states)
-if [ -n "$ARG4" ] ; then
+DEBUG=false
+if [ -n "$DEBUG_ARG" ] ; then
     DEBUG=true
     echo "Debug is on!"
 fi
 
 #==========================
-#   Validate environment
+#     Define Environment
 echo "-= Validate Environment =- "
 if [ ! -d ${JAVA_HOME} ] ; then
     echo "Expecting Java at: '${JAVA_HOME}', but is not there!"
