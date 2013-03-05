@@ -35,6 +35,7 @@ DEBUG_ARG=$1
 ANT_ARGS=" "
 ANT_OPTS="-Xmx512m"
 START_DATE=`date '+%y%m%d-%H%M'`
+BUILD_TYPE=SNAPSHOT
 
 #Directories
 ANT_HOME=/shared/common/apache-ant-1.7.0
@@ -467,12 +468,13 @@ publishP2Repo() {
 
 unset publishMavenRepo
 publishMavenRepo() {
-    #Need handoff_loc, branch, date, version, qualifier
+    #Need handoff_loc, branch, date, version, qualifier, githash
     src=$1
     branch=$2
     blddate=$3
     version=$4
     qualifier=$5
+    githash=$6
 
     echo " "
     echo "Preparing to publish Maven repository...."
@@ -484,7 +486,7 @@ publishMavenRepo() {
     fi
 
     #verify src, root dest, and needed variables exist before proceeding
-    if [ \( -d "${src}" \) -a \( -d "${BldDepsDir}" \) -a \( ! "${branch}" = "" \) -a \( ! "${blddate}" = "" \) -a \( ! "${version}" = "" \) -a \( ! "${qualifier}" = "" \) ] ; then
+    if [ \( -d "${src}" \) -a \( -d "${BldDepsDir}" \) -a \( ! "${branch}" = "" \) -a \( ! "${blddate}" = "" \) -a \( ! "${version}" = "" \) -a \( ! "${qualifier}" = "" \) -a \( ! "${githash}" = "" \) ] ; then
         if [ "${DEBUG}" = "true" ] ; then
             echo "publishMavenRepo: Required locations and data verified... proceeding..."
             echo "   src       = '${src}'"
@@ -492,6 +494,7 @@ publishMavenRepo() {
             echo "   blddate   = '${blddate}'"
             echo "   version   = '${version}'"
             echo "   qualifier = '${qualifier}'"
+            echo "   githash   = '${githash}'"
         fi
 
         error_cnt=0
@@ -552,16 +555,9 @@ publishMavenRepo() {
             ls -l ${src}/maven
         fi
 
-        # Ensure Latest branch specific upload scripts available
-        if [ "${MASTER_BRANCH_VERSION}" = "${branch}" ] ; then
-            checkoutCurrentBranch ${RUNTIME_REPO} master
-        else
-            checkoutCurrentBranch ${RUNTIME_REPO} ${branch}
-        fi
-
         #Invoke Antscript for Maven upload
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dcustom.tasks.lib=${RELENG_REPO}/ant_customizations.jar -Dversion.string=${version}.${qualifier}"
-        arguments="${arguments} -Drelease.version=${version} -Dbuild.date=${blddate} -Dbuild.type=SNAPSHOT -Dbundle.dir=${src}/maven"
+        arguments="${arguments} -Drelease.version=${version} -Dbuild.date=${blddate} -Dgit.hash=${githash} -Dbuild.type=${BUILD_TYPE} -Dbundle.dir=${src}/maven"
         #arguments="${arguments} -Drepository.username=${USER} -Drepository.userpass=${PASSWD}"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
@@ -598,6 +594,7 @@ publishMavenRepo() {
             echo "   blddate   = '${blddate}'"
             echo "   version   = '${version}'"
             echo "   qualifier = '${qualifier}'"
+            echo "   githash   = '${githash}'"
         fi
     fi
 }
@@ -814,8 +811,24 @@ for handoff in `ls handoff-file*.dat` ; do
            publishP2Repo ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${QUALIFIER}
        fi
        if [ "${PUB_SCOPE_EXPECTED}" -ge 1 ] ; then
-          echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}"
-          publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}
+           checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH_NM}
+           echo "Preparing to upload to EclipseLink Maven Repo. Setting Build to use 'uploadToMaven' script."
+           BUILDFILE=${RUNTIME_REPO}/uploadToMaven.xml
+           if [ -f ${BUILDFILE} ] ; then
+               echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}"
+               publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}
+           else
+               echo "Cannot find '${BUILDFILE}'. Aborting..."
+           fi
+
+           echo "Preparing to upload to Sonatype OSS Repo. Setting Build to use 'uploadToNexus' script."
+           BUILDFILE=${RUNTIME_REPO}/uploadToNexus.xml
+           if [ -f ${BUILDFILE} ] ; then
+               echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}"
+               publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}
+           else
+               echo "Cannot find '${BUILDFILE}'. Aborting..."
+           fi
        fi
        if [ "${PUB_SCOPE_EXPECTED}" = "${PUB_SCOPE_COMPLETED}" ] ; then
            echo "Success: now deleting '${handoff}'"

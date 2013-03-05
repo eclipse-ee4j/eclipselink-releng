@@ -456,7 +456,6 @@ for handoff in `ls handoff-file*.dat` ; do
     if [ "$PROC" = "build" ] ; then
            checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH_NM}
 
-
            echo "Preparing to upload to Sonatype OSS Repo. Setting Build to use 'uploadToNexus' script."
            BUILDFILE=${RUNTIME_REPO}/uploadToNexus.xml
            if [ -f ${BUILDFILE} ] ; then
