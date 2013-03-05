@@ -285,6 +285,7 @@ publishMavenRepo() {
             echo "   blddate   = '${blddate}'"
             echo "   version   = '${version}'"
             echo "   qualifier = '${qualifier}'"
+            echo "   githash   = '${githash}'"
         fi
 
         error_cnt=0
@@ -345,13 +346,6 @@ publishMavenRepo() {
             ls -l ${src}/maven
         fi
 
-        # Ensure Latest branch specific upload scripts available
-        if [ "${MASTER_BRANCH_VERSION}" = "${branch}" ] ; then
-            checkoutCurrentBranch ${RUNTIME_REPO} master
-        else
-            checkoutCurrentBranch ${RUNTIME_REPO} ${branch}
-        fi
-
         #Invoke Antscript for Maven upload
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dcustom.tasks.lib=${RELENG_REPO}/ant_customizations.jar -Dversion.string=${version}.${qualifier}"
         arguments="${arguments} -Drelease.version=${version} -Dbuild.date=${blddate} -Dgit.hash=${githash} -Dbuild.type=${BUILD_TYPE} -Dbundle.dir=${src}/maven"
@@ -391,10 +385,10 @@ publishMavenRepo() {
             echo "   blddate   = '${blddate}'"
             echo "   version   = '${version}'"
             echo "   qualifier = '${qualifier}'"
+            echo "   githash   = '${githash}'"
         fi
     fi
 }
-
 
 
 #==========================
@@ -460,13 +454,15 @@ for handoff in `ls handoff-file*.dat` ; do
     # Do stuff
     parseHandoff ${handoff}
     if [ "$PROC" = "build" ] ; then
+           checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH_NM}
+
 
            echo "Preparing to upload to Sonatype OSS Repo. Setting Build to use 'uploadToNexus' script."
            BUILDFILE=${RUNTIME_REPO}/uploadToNexus.xml
            if [ -f ${BUILDFILE} ] ; then
-               BUILD_TYPE=M7
-               echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}"
-               publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER}
+#               BUILD_TYPE=M7
+               echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}"
+               publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}
            else
                echo "Cannot find '${BUILDFILE}'. Aborting..."
            fi
