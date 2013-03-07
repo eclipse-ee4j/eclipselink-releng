@@ -33,7 +33,7 @@ umask 0002
 DEBUG_ARG=$1
 
 ANT_ARGS=" "
-ANT_OPTS="-Xmx512m"
+ANT_OPTS="-Xms512m -Xmx1024m -XX:MaxPermSize=512m"
 START_DATE=`date '+%y%m%d-%H%M'`
 BUILD_TYPE=SNAPSHOT
 
