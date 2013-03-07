@@ -33,7 +33,7 @@ umask 0002
 DEBUG_ARG=$1
 
 ANT_ARGS=" "
-ANT_OPTS="-Xmx512m"
+ANT_OPTS="-Xms512m -Xmx1024m -XX:MaxPermSize=512m"
 START_DATE=`date '+%y%m%d-%H%M'`
 BUILD_TYPE=SNAPSHOT
 
@@ -548,6 +548,15 @@ publishMavenRepo() {
             cp ${srczip} ${src}/maven/eclipselink-src.zip
         else
             echo "${srczip} not found!"
+            error_cnt=`expr ${error_cnt} + 1`
+        fi
+        if [ "${DEBUG}" = "true" ] ; then
+            echo "Expanding javadoc from ${installzip}..."
+        fi
+        if [ -f ${installzip} ] ; then
+            unzip -o -j -q ${installzip} eclipselink/*javadoc* -d ${src}/maven
+        else
+            echo "${installzip} not found!"
             error_cnt=`expr ${error_cnt} + 1`
         fi
         if [ "${DEBUG}" = "true" ] ; then

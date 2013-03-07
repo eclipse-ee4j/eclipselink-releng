@@ -1,6 +1,6 @@
 # !/bin/sh
 #****************************************************************************************
-# Copyright (c) 2012 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2012, 2013 Oracle and/or its affiliates. All rights reserved.
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
 # which accompanies this distribution.
@@ -11,6 +11,7 @@
 #
 # Contributors:
 #  - egwin - 13 September 2012 - Initial implementation
+#  - egwin - 07 March 2013     - Updates for staging to SonatypeOSS
 #****************************************************************************************
 
 #----------------------------------------------------------------------------------------
@@ -34,7 +35,7 @@ BRANCH_NM=$3
 DEBUG_ARG=$4
 
 ANT_ARGS=" "
-ANT_OPTS="-Xmx512m"
+ANT_OPTS="-Xms512m -Xmx1024m -XX:MaxPermSize=512m"
 START_DATE=`date '+%y%m%d-%H%M'`
 
 #Directories
