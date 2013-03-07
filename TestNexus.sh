@@ -342,6 +342,15 @@ publishMavenRepo() {
             error_cnt=`expr ${error_cnt} + 1`
         fi
         if [ "${DEBUG}" = "true" ] ; then
+            echo "Expanding javadoc from ${installzip}..."
+        fi
+        if [ -f ${installzip} ] ; then
+            unzip -o -j -q ${installzip} eclipselink/*javadoc* -d ${src}/maven
+        else
+            echo "${installzip} not found!"
+            error_cnt=`expr ${error_cnt} + 1`
+        fi
+        if [ "${DEBUG}" = "true" ] ; then
             echo "Long-listing of '${src}/maven':"
             ls -l ${src}/maven
         fi
