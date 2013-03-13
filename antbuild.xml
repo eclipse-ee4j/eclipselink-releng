@@ -21,11 +21,13 @@
         </condition>
         <fail message="Missing '-Dmtag='. Should be set to the Milestone tag (M1, M2, ..., RC1, etc), when type is set to 'm'" unless="milestone.ok"/>
         <!-- setup static properties, and validate build type -->
-        <property name="do.composite"         value="true"/>
-        <property name="build.root.dir"       value="/opt/public/rt/eclipselink/trunk"/>
-        <property name="p2.SDK.install.dir"   value="/shared/rt/eclipselink/bld_deps/trunk/eclipse"/>
-        <property name="download.base.dir"    value="/home/data/httpd/download.eclipse.org/rt/eclipselink"/>
-        <property name="install.base.dir"     value="/home/data/httpd/download.eclipse.org/rt/eclipselink/nightly"/>
+        <property name="do.composite"           value="true"/>
+        <property name="build.root.dir"         value="/opt/public/rt/eclipselink"/>
+        <property name="eclipselink.releng.dir" value="${build.root.dir}/eclipselink.releng"/>
+        <property name="blddeps.dir"            value="/shared/rt/eclipselink/bld_deps/master"/>
+        <property name="p2.SDK.install.dir"     value="${blddeps.dir}/eclipse"/>
+        <property name="download.base.dir"      value="/home/data/httpd/download.eclipse.org/rt/eclipselink"/>
+        <property name="install.base.dir"       value="/home/data/httpd/download.eclipse.org/rt/eclipselink/nightly"/>
         <property name="archived.download.base.dir" value="??/rt/eclipselink"/>
         <condition property="type.ok">
             <or>
@@ -106,7 +108,7 @@
         <property name="p2.publisher.jar"         value="org.eclipse.equinox.p2.publisher_*.jar"/>
         <property name="p2.launcher.jar"          value="org.eclipse.equinox.launcher_*.jar"/>
         <property name="p2.artifact.jar"          value="org.eclipse.equinox.artifact.repository_*.jar"/>
-        <property name="regen.composite.script"   value="${build.root.dir}/buildsystem/buildCompositeP2.sh"/>
+        <property name="regen.composite.script"   value="${eclipselink.releng.dir}/buildCompositeP2.sh"/>
         <!-- Input definitions -->
         <property name="p2.mirror.dir"            value="${mirror}"/>
         <property name="p2.feature.dir"           value="${p2.repos.dir}/features"/>
@@ -158,10 +160,13 @@
         <echo message="destination name(p2.mirror.name)='${p2.mirror.name}'"/>
         <echo message="-----"/>
 
-        <!-- Make sure necessary resources exist -->
+        <!-- Test for needed resources -->
         <available file="${bundle.install.file}"    property="bundle.installer.exist"/>
         <available file="${p2.SDK.plugin.dir}"      property="sdk.install.exist"/>
         <available file="${regen.composite.script}" property="regen.script.exist"/>
+
+        <!-- Make sure necessary resources exist -->
+        <fail message"Error: '${p2.SDK.plugin.dir}' not found!" unless="sdk.install.exist"/>
     </target>
 
     <target name="test-ready-to-go">
