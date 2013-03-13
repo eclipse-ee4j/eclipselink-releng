@@ -6,7 +6,7 @@
         <fail message="Missing '-Dtype='. Should be set to 'n' for 'nightly', 'm' for 'milestone' or 'r' for 'release'." unless="type"/>
         <fail message="Missing '-Dversion='. Should be set to the build version (1.1.3, 2.0.2, etc)." unless="version"/>
         <fail message="Missing '-Ddate='. Should be set to the build date (20100429, 20100504, etc)." unless="date"/>
-        <fail message="Missing '-Drev='. Should be set to the src revision (6505, 7234, etc)." unless="rev"/>
+        <fail message="Missing '-Dhash='. Should be set to the hash from the git repo (65a0fd5, fe7adf4, etc)." unless="hash"/>
         <!-- make sure milestone tag is set if an 'm' build -->
         <condition property="milestone.ok">
             <or>
@@ -51,7 +51,7 @@
         <property name="release.version"           value="${version}"/>
         <!-- setup revision dependent properties -->
         <property name="release.version"           value="${version}"/>
-        <property name="version.qualifier"          value="v${date}-r${rev}"/>
+        <property name="version.qualifier"          value="v${date}-r${hash}"/>
         <property name="version.string"             value="${release.version}.${version.qualifier}"/>
         <property name="bundle.install.zip"         value="eclipselink-plugins-${version.string}.zip"/>
         <property name="p2.archive.presigned.zip"   value="eclipselink-P2-${version.string}.zip"/>
@@ -81,7 +81,7 @@
             </or>
         </condition>
         <fail message="Invalid '-Dmtag='. Cannot find '${installer.dir}/${mtag}' dir." unless="mtag.ok"/ -->
-        <!-- validate build date and rev (qualifier) -->
+        <!-- validate build date and hash (qualifier) -->
         <condition property="bundle.install.file"   value="${installer.dir}/${bundle.install.zip}">
             <available file="${installer.dir}/${bundle.install.zip}"/>
         </condition>
@@ -91,7 +91,7 @@
         <condition property="bundle.install.file"   value="${installer.dir}/${date}/${bundle.install.zip}">
             <available file="${installer.dir}/${date}/${bundle.install.zip}"/>
         </condition>
-        <fail message="Invalid '-Ddate=' or '-Drev'. Cannot find '${bundle.install.zip}'." unless="bundle.install.file"/>
+        <fail message="Invalid '-Ddate=' or '-Dhash'. Cannot find '${bundle.install.zip}'." unless="bundle.install.file"/>
         <!-- assumes will be doing full p2 setup therefore probably from nightly loc -->
         <condition property="p2.archive.zip"        value="${installer.dir}/${date}/${p2.archive.presigned.zip}"
                                                      else="${installer.dir}/${date}/${p2.archive.signed.zip}">
@@ -179,7 +179,7 @@
     </target>
 
     <target name="not-ready-to-go" unless="ready-to-go" depends="test-ready-to-go">
-        <fail message="Bundle Installer or p2 archive not found! Skipping P2 repos generation."/>
+        <fail message="Bundle Installer (${bundle.install.file}) or p2 archive (${p2.archive.zip})not found! Skipping P2 repos generation."/>
     </target>
 
     <target name="clear-p2-loc" if="ready-to-go" depends="not-ready-to-go">
@@ -194,7 +194,12 @@
         <!-- populate update site with feature and bundle jars -->
         <unzip dest="${p2.bundle.dir}" src="${bundle.install.file}">
             <patternset>
-                <include name="*.jar"/>
+                <include name="**/*.jar"/>
+            </patternset>
+        </unzip>
+        <unzip dest="${p2.bundle.dir}" src="${nosql.install.file}">
+            <patternset>
+                <include name="**/*.jar"/>
             </patternset>
         </unzip>
         <!-- Remove jars we are not including in features at this time (needs to be separate because exclude in unzip does not seem to work) -->
@@ -202,19 +207,19 @@
             <fileset
                 dir="${p2.bundle.dir}"
                 includes="
-                          *dbws*.jar,
                           *jms*.jar,
                           com.sun*.jar,
                           eclipselink*.jar,
+                          *ejb*.jar,
                           javax.persistence*_1.*.jar,
                           *preview*.jar,
                           *javax.resource*.jar,
                           *javax.transaction*.jar,
                           javax.xml.bind.source*.jar,
                           *modelgen*.jar,
-                          *servlet*.jar,
                           *soap*.jar,
-                          *xml.ws*.jar"
+                          *xml.ws*.jar,
+                          *jpars*.jar"
             />
         </delete>
         <unzip dest="${p2.feature.dir}" src="${p2.archive.zip}">
