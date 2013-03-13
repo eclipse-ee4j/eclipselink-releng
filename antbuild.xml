@@ -166,7 +166,7 @@
         <available file="${regen.composite.script}" property="regen.script.exist"/>
 
         <!-- Make sure necessary resources exist -->
-        <fail message"Error: '${p2.SDK.plugin.dir}' not found!" unless="sdk.install.exist"/>
+        <fail message="Error: '${p2.SDK.plugin.dir}' not found!" unless="sdk.install.exist"/>
     </target>
 
     <target name="test-ready-to-go">
