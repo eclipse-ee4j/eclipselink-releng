@@ -30,7 +30,8 @@ PROGNAME=`basename ${THIS}`
 umask 0002
 #USER=$1
 #PASSWD=$2
-DEBUG_ARG=$1
+FLAG_ARG=$1
+DEBUG_ARG=$2
 
 ANT_ARGS=" "
 ANT_OPTS="-Xms512m -Xmx1024m -XX:MaxPermSize=512m"
@@ -64,10 +65,11 @@ export ANT_ARGS ANT_OPTS ANT_HOME HOME_DIR JAVA_HOME LOG_DIR PATH
 #
 unset usage
 usage() {
-    echo "Usage: ${PROGNAME} USER PASSWD [debug]"
+    echo "Usage: ${PROGNAME} USER PASSWD [flag [debug]]"
     echo "   USER      - user to publish artifacts to maven"
     echo "   PASSWD    - password for maven user"
-    echo "   DEBUG_ARG - if defined, designates a run should be 'debug'."
+    echo "   FLAG      - if defined as 'mvn' will publish to maven, otherwise designates a run should be 'debug'."
+    echo "   DEBUG     - if FLAG is 'mvn' and DEBUG is defined, designates a 'mvn run' to be 'debug'."
 }
 
 unset createPath
@@ -559,6 +561,25 @@ publishMavenRepo() {
             echo "${installzip} not found!"
             error_cnt=`expr ${error_cnt} + 1`
         fi
+        # appropriately rename javadoc archives
+#        if [ -f ${src}/maven/eclipselink-javadocs.zip ] ; then
+#            mv ${src}/maven/eclipselink-javadocs.zip ${src}/maven/eclipselink-javadoc.jar
+#        else
+#            echo "${src}/maven/eclipselink-javadocs.zip not found!"
+#            error_cnt=`expr ${error_cnt} + 1`
+#        fi
+#        if [ -f ${src}/maven/eclipselink-jpars-javadocs.zip ] ; then
+#            mv ${src}/maven/eclipselink-jpars-javadocs.zip ${src}/maven/eclipselink-jpars-javadoc.jar
+#        else
+#            echo "${src}/maven/eclipselink-jpars-javadocs.zip not found!"
+#            error_cnt=`expr ${error_cnt} + 1`
+#        fi
+#        if [ -f ${src}/maven/nosql-javadocs.zip ] ; then
+#            mv ${src}/maven/nosql-javadocs.zip ${src}/maven/nosql-javadoc.jar
+#        else
+#            echo "${src}/maven/eclipselink-jpars-javadocs.zip not found!"
+#            error_cnt=`expr ${error_cnt} + 1`
+#        fi
         if [ "${DEBUG}" = "true" ] ; then
             echo "Long-listing of '${src}/maven':"
             ls -l ${src}/maven
@@ -763,12 +784,24 @@ publishToolsArtifacts() {
 #    echo "PASSWD not specified! Exiting..."
 #    exit 1
 #fi
-#  If anything is in DEBUG_ARG then do a dummy "DEBUG" run
-#  run (Don't call ant, don't remove handoff, do report variable states
+#  Test FLAG_ARG and DEBUG_ARG to determine run properties (MVN run and/or "DEBUG" run)
+#  DEBUG run: (Don't call ant, don't remove handoff, do report variable states
 DEBUG=false
-if [ -n "$DEBUG_ARG" ] ; then
-    DEBUG=true
-    echo "Debug is on!"
+MVN=false
+if [ -n "$FLAG_ARG" ] ; then
+    if [ "$FLAG_ARG" = "mvn" ] ; then
+        MVN=true
+        echo "Maven publish is on!"
+        if [ -n "$DEBUG_ARG" ] ; then
+            DEBUG=true
+            echo "Debug is on!"
+        fi
+    else
+        DEBUG=true
+        echo "Debug is on!"
+    fi
+else
+    echo "MVN and DEBUG are off."
 fi
 
 #==========================
@@ -819,7 +852,7 @@ for handoff in `ls handoff-file*.dat` ; do
        if [ "${PUB_SCOPE_EXPECTED}" -ge 10 ] ; then
            publishP2Repo ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${QUALIFIER}
        fi
-       if [ "${PUB_SCOPE_EXPECTED}" -ge 1 ] ; then
+       if [ "${MVN}" = "true" ] ; then
            checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH_NM}
            echo "Preparing to upload to EclipseLink Maven Repo. Setting Build to use 'uploadToMaven' script."
            BUILDFILE=${RUNTIME_REPO}/uploadToMaven.xml
