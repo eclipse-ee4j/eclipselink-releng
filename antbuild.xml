@@ -56,6 +56,7 @@
         <property name="version.qualifier"          value="v${date}-${hash}"/>
         <property name="version.string"             value="${release.version}.${version.qualifier}"/>
         <property name="bundle.install.zip"         value="eclipselink-plugins-${version.string}.zip"/>
+        <property name="nosql.install.zip"          value="eclipselink-plugins-nosql-${version.string}.zip"/>
         <property name="p2.archive.presigned.zip"   value="eclipselink-P2-${version.string}.zip"/>
         <property name="p2.archive.signed.zip"      value="eclipselink-P2signed-${version.string}.zip"/>
         <condition property="p2.repos.dir"          value="${p2.composite.root.dir}/${version.string}_${mtag}"
@@ -94,6 +95,17 @@
             <available file="${installer.dir}/${date}/${bundle.install.zip}"/>
         </condition>
         <fail message="Invalid '-Ddate=' or '-Dhash'. Cannot find '${bundle.install.zip}'." unless="bundle.install.file"/>
+        <!-- same for nosql -->
+        <condition property="nosql.install.file"   value="${installer.dir}/${nosql.install.zip}">
+            <available file="${installer.dir}/${nosql.install.zip}"/>
+        </condition>
+        <condition property="nosql.install.file"   value="${installer.dir}/${mtag}/${nosql.install.zip}">
+            <available file="${installer.dir}/${mtag}/${nosql.install.zip}"/>
+        </condition>
+        <condition property="nosql.install.file"   value="${installer.dir}/${date}/${nosql.install.zip}">
+            <available file="${installer.dir}/${date}/${nosql.install.zip}"/>
+        </condition>
+        <fail message="Invalid '-Ddate=' or '-Dhash'. Cannot find '${nosql.install.zip}'." unless="nosql.install.file"/>
         <!-- assumes will be doing full p2 setup therefore probably from nightly loc -->
         <condition property="p2.archive.zip"        value="${installer.dir}/${date}/${p2.archive.presigned.zip}"
                                                      else="${installer.dir}/${date}/${p2.archive.signed.zip}">
@@ -139,6 +151,7 @@
         <echo message="category.qualifier     ='${category.qualifier}'"/>
         <echo message=" ---"/>
         <echo message="bundle.install.file    ='${bundle.install.file}'"/>
+        <echo message="nosql.install.file    ='${nosql.install.file}'"/>
         <echo message="p2.archive.zip         ='${p2.archive.zip}'"/>
         <echo message=" ---"/>
         <echo message="p2.SDK.install.dir     ='${p2.SDK.install.dir}'"/>
@@ -162,6 +175,7 @@
 
         <!-- Test for needed resources -->
         <available file="${bundle.install.file}"    property="bundle.installer.exist"/>
+        <available file="${nosql.install.file}"    property="nosql.installer.exist"/>
         <available file="${p2.SDK.plugin.dir}"      property="sdk.install.exist"/>
         <available file="${regen.composite.script}" property="regen.script.exist"/>
 
@@ -179,12 +193,13 @@
             <and>
                 <isset property="signing.archive.exist"/>
                 <isset property="bundle.installer.exist"/>
+                <isset property="nosql.installer.exist"/>
             </and>
         </condition>
     </target>
 
     <target name="not-ready-to-go" unless="ready-to-go" depends="test-ready-to-go">
-        <fail message="Bundle Installer (${bundle.install.file}) or p2 archive (${p2.archive.zip})not found! Skipping P2 repos generation."/>
+        <fail message="Bundle Installer (${bundle.install.file}) or NoSQL Installer (${nosql.install.file}) or p2 archive (${p2.archive.zip})not found! Skipping P2 repos generation."/>
     </target>
 
     <target name="clear-p2-loc" if="ready-to-go" depends="not-ready-to-go">
