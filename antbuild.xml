@@ -112,7 +112,7 @@
             </and>
         </condition>
 
-        <fail message="Invalid '-Ddate=' or '-Dhash'. Cannot find '${nosql.install.zip}'." unless="nosql.missing"/>
+        <fail message="Invalid '-Ddate=' or '-Dhash'. Cannot find '${nosql.install.zip}'." if="nosql.missing"/>
         <!-- assumes will be doing full p2 setup therefore probably from nightly loc -->
         <condition property="p2.archive.zip"        value="${installer.dir}/${date}/${p2.archive.presigned.zip}"
                                                      else="${installer.dir}/${date}/${p2.archive.signed.zip}">
