@@ -94,7 +94,7 @@ genArtifact() {
 
 unset genChildren
 genChildren() {
-    for child in `ls -dr [0-9]*` ; do
+    for child in `ls -dr [0-9]* | grep -v zip` ; do
         child_count=`expr $child_count + 1`
         echo "    <child location='${child}'/>" >> $tmp/children.xml
     done
