@@ -33,7 +33,7 @@
 #******************************************************************************/-->
 <project name="eclipselink.archive.releases" default="generate-archives" basedir=".">
     <available file="../updates" type="dir" property="updates.is.local"/>
-    <fail message="Not running from 'updates' directory." unless="updates.is.local"/>
+    <!-- fail message="Not running from 'updates' directory." unless="updates.is.local"/ -->
 
     <target name="init" >
         <dirname  property="build.location_temp" file="${ant.file.eclipselink.archive.releases}"/>
