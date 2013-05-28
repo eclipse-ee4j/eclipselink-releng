@@ -65,6 +65,7 @@
         <property name="2.3.3" value="2.3.3.v20120629-r11760"/>
         <property name="2.4.0" value="2.4.0.v20120608-r11652"/>
         <property name="2.4.1" value="2.4.1.v20121003-ad44345"/>
+        <property name="2.5.0" value="2.5.0.v20130507-3faac2b"/>
     </target>
 
     <target name="archive-p2-child" if="${release}.ready">
@@ -95,6 +96,7 @@
         <check_release releaseProperty="2.3.3"/>
         <check_release releaseProperty="2.4.0"/>
         <check_release releaseProperty="2.4.1"/>
+        <check_release releaseProperty="2.5.0"/>
     </target>
 
     <macrodef name="check_release">
