@@ -11,38 +11,25 @@
     <packaging>jar</packaging>
 
     <properties>
-        <eclipselink.version>2.4.0</eclipselink.version>
+        <eclipselink.version>2.5.0</eclipselink.version>
     </properties>
 
-    <repositories>
-        <!-- NOTE: user feedback seems to indicate that direct connection to
-             our repo works more consistently and is less prone to data
-             corruption errors while transferring artifacts. However, there
-             are cases where the dynamic mirror URL appears to work better
-             (possibly in areas outside of North America); this is likely due
-             to a mirror being found that is geographically closer. In those
-             cases, explicit connection to that mirror should produce the best
-             results.
-        -->
+    <!-- As of the 2.5.0 release, EclipseLink artifacts are available on Maven Central
+         so the following repository section shouldn't be required unless testing for
+         specific Milestone or SNAPSHOT builds
+    -->
+    <!-- repositories>
         <repository>
-             <id>EclipseLink Repo</id>
-             <url>http://download.eclipse.org/rt/eclipselink/maven.repo</url>
+             <id>SonatypeOSS EclipseLink Repo</id>
+             <url>https://oss.sonatype.org/content/groups/staging</url>
         </repository>
-        <!-- <repository>
-             <id>EclipseLink Repo (Using Eclipse's Dynamic Mirroring)</id>
-             <url>http://www.eclipse.org/downloads/download.php?r=1&amp;nf=1&amp;file=/rt/eclipselink/maven.repo</url>
-        </repository> -->
-        <!-- <repository>
-             <id>EclipseLink Repo (Using an explicit Eclipse Mirror)</id>
-             <url>http://[Enter Mirror Name Here]/rt/eclipselink/maven.repo</url>
-        </repository> -->
-    </repositories>
+    </repositories -->
 
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>3.8.1</version>
+            <version>4.5.0</version>
             <scope>test</scope>
         </dependency>
         <!-- NOTE: Below is simply a list of most of our published artifacts.
@@ -110,19 +97,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
-            <artifactId>org.eclipse.persistence.weaving</artifactId>
-            <version>${eclipselink.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.persistence</groupId>
             <artifactId>org.eclipse.persistence.dbws</artifactId>
-            <version>${eclipselink.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.persistence</groupId>
-            <artifactId>org.eclipse.persistence.osgi</artifactId>
             <version>${eclipselink.version}</version>
             <scope>compile</scope>
         </dependency>
