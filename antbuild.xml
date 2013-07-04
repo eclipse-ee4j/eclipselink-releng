@@ -224,7 +224,7 @@
                 <include name="**/*.jar"/>
             </patternset>
         </unzip>
-        <unzip dest="${p2.bundle.dir}" src="${nosql.install.file}" failonerror="false">
+        <unzip dest="${p2.bundle.dir}" src="${nosql.install.file}">
             <patternset>
                 <include name="**/*.jar"/>
             </patternset>
