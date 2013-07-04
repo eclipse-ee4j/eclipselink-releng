@@ -77,6 +77,10 @@
             </zipfileset>
         </zip>
     </target>
+    
+    <target name="skip-p2-child" unless="${release}.ready">
+        <echo message="'${release}.ready' not set. Skipping archival of '${release}'."/>
+    </target>
 
     <target name="generate-archives" depends="init">
         <check_release releaseProperty="1.1.2"/>
