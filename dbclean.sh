@@ -1,5 +1,7 @@
 # !/bin/sh
 
+#This cleans all the tables used by all cb and nightly builds (super sledge)
+
 SETUP=FALSE
 ARG1=$1
 

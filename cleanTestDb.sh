@@ -1,5 +1,7 @@
 # !/bin/sh
 
+# This cleans the database used by a specific branch for its cb and nightly builds
+
 BRANCH=$1
 COMMON_BLD_ROOT=/shared/rt/eclipselink
 MYSQL_EXEC=/usr/bin/mysql
