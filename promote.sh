@@ -369,7 +369,6 @@ callAnt() {
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dreleng.repo.dir=${RELENG_REPO} -Dgit.exec=${GIT_EXEC}"
         arguments="${arguments} -Dbranch.name=${branch_nm} -Drelease.version=${version} -Dbuild.type=${milestone} -Dbranch=${branch}"
         arguments="${arguments} -Dversion.qualifier=${qualifier} -Dbuild.date=${blddate} -Dgit.hash=${githash}"
-#        arguments="${arguments} -Drepository.username=${USER} -Drepository.userpass=${PASSWD}"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
         echo "pwd='`pwd`"
@@ -426,17 +425,6 @@ if [ "${BRANCH_NM}" = "" ] ; then
     echo "BRANCH_NM not specified! Exiting..."
     exit 1
 fi
-#if [ "${USER}" = "" ] ; then
-#    echo " "
-#    echo "USER not specified! Exiting..."
-#    exit 1
-#fi
-#if [ "${PASSWD}" = "" ] ; then
-#    usage
-#    echo " "
-#    echo "PASSWD not specified! Exiting..."
-#    exit 1
-#fi
 #  If anything is in DEBUG_ARG then do a dummy "DEBUG" run
 #  (Do not call ant, do not modify or create files, do report variable states)
 DEBUG=false

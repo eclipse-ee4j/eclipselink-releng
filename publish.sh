@@ -28,8 +28,6 @@
 THIS=$0
 PROGNAME=`basename ${THIS}`
 umask 0002
-#USER=$1
-#PASSWD=$2
 FLAG_ARG=$1
 DEBUG_ARG=$2
 
@@ -65,9 +63,7 @@ export ANT_ARGS ANT_OPTS ANT_HOME HOME_DIR JAVA_HOME LOG_DIR PATH
 #
 unset usage
 usage() {
-    echo "Usage: ${PROGNAME} USER PASSWD [flag [debug]]"
-    echo "   USER      - user to publish artifacts to maven"
-    echo "   PASSWD    - password for maven user"
+    echo "Usage: ${PROGNAME} [flag [debug]]"
     echo "   FLAG      - if defined as 'mvn' will publish to maven, otherwise designates a run should be 'debug'."
     echo "   DEBUG     - if FLAG is 'mvn' and DEBUG is defined, designates a 'mvn run' to be 'debug'."
 }
@@ -561,25 +557,6 @@ publishMavenRepo() {
             echo "${installzip} not found!"
             error_cnt=`expr ${error_cnt} + 1`
         fi
-        # appropriately rename javadoc archives
-#        if [ -f ${src}/maven/eclipselink-javadocs.zip ] ; then
-#            mv ${src}/maven/eclipselink-javadocs.zip ${src}/maven/eclipselink-javadoc.jar
-#        else
-#            echo "${src}/maven/eclipselink-javadocs.zip not found!"
-#            error_cnt=`expr ${error_cnt} + 1`
-#        fi
-#        if [ -f ${src}/maven/eclipselink-jpars-javadocs.zip ] ; then
-#            mv ${src}/maven/eclipselink-jpars-javadocs.zip ${src}/maven/eclipselink-jpars-javadoc.jar
-#        else
-#            echo "${src}/maven/eclipselink-jpars-javadocs.zip not found!"
-#            error_cnt=`expr ${error_cnt} + 1`
-#        fi
-#        if [ -f ${src}/maven/nosql-javadocs.zip ] ; then
-#            mv ${src}/maven/nosql-javadocs.zip ${src}/maven/nosql-javadoc.jar
-#        else
-#            echo "${src}/maven/eclipselink-jpars-javadocs.zip not found!"
-#            error_cnt=`expr ${error_cnt} + 1`
-#        fi
         if [ "${DEBUG}" = "true" ] ; then
             echo "Long-listing of '${src}/maven':"
             ls -l ${src}/maven
@@ -588,7 +565,6 @@ publishMavenRepo() {
         #Invoke Antscript for Maven upload
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dcustom.tasks.lib=${RELENG_REPO}/ant_customizations.jar -Dversion.string=${version}.${qualifier}"
         arguments="${arguments} -Drelease.version=${version} -Dbuild.date=${blddate} -Dgit.hash=${githash} -Dbuild.type=${BUILD_TYPE} -Dbundle.dir=${src}/maven"
-        #arguments="${arguments} -Drepository.username=${USER} -Drepository.userpass=${PASSWD}"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
         echo "ant ${BUILDFILE} ${arguments}"
@@ -771,19 +747,6 @@ publishToolsArtifacts() {
 #   Main Begins
 #
 #==========================
-#   Validate run parameters
-#if [ "${USER}" = "" ] ; then
-#    usage
-#    echo " "
-#    echo "USER not specified! Exiting..."
-#    exit 1
-#fi
-#if [ "${PASSWD}" = "" ] ; then
-#    usage
-#    echo " "
-#    echo "PASSWD not specified! Exiting..."
-#    exit 1
-#fi
 #  Test FLAG_ARG and DEBUG_ARG to determine run properties (MVN run and/or "DEBUG" run)
 #  DEBUG run: (Don't call ant, don't remove handoff, do report variable states
 DEBUG=false
