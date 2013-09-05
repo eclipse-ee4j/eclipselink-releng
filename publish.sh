@@ -37,11 +37,11 @@ START_DATE=`date '+%y%m%d-%H%M'`
 BUILD_TYPE=SNAPSHOT
 
 #Directories
-ANT_HOME=/shared/common/apache-ant-1.7.0
+#ANT_HOME=/shared/common/apache-ant-1.7.0
+#JAVA_HOME=/shared/common/jdk-1.6.x86_64
 HOME_DIR=/shared/rt/eclipselink
 EXEC_DIR=${HOME_DIR}
 DNLD_DIR=/home/data/httpd/download.eclipse.org/rt/eclipselink
-JAVA_HOME=/shared/common/jdk-1.6.x86_64
 LOG_DIR=${HOME_DIR}/logs
 RELENG_REPO=${HOME_DIR}/eclipselink.releng
 RUNTIME_REPO=${HOME_DIR}/eclipselink.runtime
@@ -54,7 +54,7 @@ PUB_SCOPE_EXPECTED=0
 PUB_SCOPE_COMPLETED=0
 MASTER_BRANCH_VERSION=2.6
 
-PATH=${JAVA_HOME}/bin:${ANT_HOME}/bin:/usr/bin:/usr/local/bin:${PATH}
+#PATH=${JAVA_HOME}/bin:${ANT_HOME}/bin:/usr/bin:/usr/local/bin:${PATH}
 
 # Export necessary global environment variables
 export ANT_ARGS ANT_OPTS ANT_HOME HOME_DIR JAVA_HOME LOG_DIR PATH
@@ -786,6 +786,29 @@ else
     echo "Found: ${GIT_EXEC}"
 fi
 
+# Check for M2_HOME (only set in bashrc: if not set running from cron, and load)
+if [ ! -x ${M2_HOME}/bin/mvn ] ; then
+    env
+    echo " whoami=`whoami`"
+    echo "Cannot find Maven executable using default value '${M2_HOME}/bin/mvn'. Loading .bashrc..."
+    usr=`whoami`
+    /home/data/users/$usr/.bashrc
+    if [ $? -ne 0 ] ; then
+        echo "Error: Unable to load /home/data/users/$usr/.bashrc... exiting"
+        exit 1
+    else
+        if [ ! -x ${M2_HOME}/bin/mvn ] ; then
+            echo "Still Cannot find Maven executable using default value '${M2_HOME}/bin/mvn'. exiting..."
+            exit 1
+        else
+            echo "Found: ${M2_HOME}/bin/mvn"
+        fi
+    fi
+else
+    echo "Found: ${M2_HOME}/bin/mvn"
+fi
+
+exit
 #==========================
 #     Test for handoff
 #        if not exit with minimal work done.
