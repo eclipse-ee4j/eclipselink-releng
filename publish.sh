@@ -319,56 +319,77 @@ publishBuildArtifacts() {
             echo "   date      = '${date}'"
             echo "   timestamp = '${timestamp}'"
         fi
-
-        #Mk download destination dir (dest/nightly/<version>/<date>)
-        downloadDest=${rootDest}/${version}/${date}
-        createPath ${downloadDest}
-
-        #force <date> dir's date attribute to date of handoff
-        touch -t${timestamp} ${downloadDest}
-
-        #count number of jars exported, and copy them preserving date
+        
+        #count number of jars exported
         srcJarCount=`ls ${src} | grep -c [.]jar$`
-        if [ "${srcJarCount}" -gt 0 ] ; then
-            if [ "${DEBUG}" = "true" ] ; then
-                echo "publishBuildArtifacts: Copying ${srcJarCount} jar(s)"
-                echo "                       from: '${src}'"
-                echo "                         to: '${downloadDest}'"
-            fi
-            cp --preserve=timestamps ${src}/*.jar ${downloadDest}/.
-        fi
-        destJarCount=`ls ${downloadDest} | grep -c [.]jar$`
-        if [ "${DEBUG}" = "true" ] ; then
-            echo "publishBuildArtifacts: ${destJarCount} jar(s) copied."
-        fi
-
-        #count number of archives (zips) exported, and copy them preserving date
+        #copy number of archives (zips) exported
         srcZipCount=`ls ${src} | grep -c [.]zip$`
         #track qualifier pattern in case multiple builds in one day (reverse order because sharedlib zip may be first and is non-conformant)
         srcQualified=`ls -r ${src} | grep -m1 [.]zip$ | cut -d'.' -f4`
-        if [ "${srcZipCount}" -gt 0 ] ; then
+        
+        AlreadyProcessed=false
+        if [ -d ${rootDest}/${version}/${date} ] ; then
+            destJarCount=`ls ${downloadDest} | grep -c [.]jar$`
+            destZipCount=`ls ${downloadDest}/*${srcQualified}* | grep -c [.]zip$`
             if [ "${DEBUG}" = "true" ] ; then
-                echo "publishBuildArtifacts: Copying ${srcZipCount} zip(s)"
-                echo "                       from: '${src}'"
-                echo "                         to: '${downloadDest}'"
+                echo "publishBuildArtifacts: ${destJarCount} jar(s) found pre-existing."
+                echo "publishBuildArtifacts: ${destZipCount} zip(s) found pre-existing."
             fi
-            cp --preserve=timestamps ${src}/*.zip ${downloadDest}/.
-        fi
-        # check number of appropriately qualified destination files
-        destZipCount=`ls ${downloadDest}/*${srcQualified}* | grep -c [.]zip$`
-        if [ "${DEBUG}" = "true" ] ; then
-            echo "publishBuildArtifacts: ${destZipCount} zips copied."
-        fi
-
-        #verify everything copied correctly
-        if [ \( "${srcJarCount}" = "${destJarCount}" \) -a \( "${srcZipCount}" = "${destZipCount}" \) ] ; then
-            echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s) successfully."
-            PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} + 100`
-            NEW_WEB_ARTIFACTS=true
+            if [ \( "${destJarCount}" -eq "${srcJarCount}" \) -a \( "${destZipCount}" -eq "${srcZipCount}" \) ] ; then
+                AlreadyProcessed=true
+            fi
         else
-            echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s), but Src and Dest numbers don't match."
-            echo "    Expected ${srcJarCount} jar(s) and ${srcZipCount} zip(s) to copy. Publish failed!"
-            Error=true
+            #Mk download destination dir (dest/nightly/<version>/<date>)
+            downloadDest=${rootDest}/${version}/${date}
+            createPath ${downloadDest}
+            
+            #force <date> dir's date attribute to date of handoff
+            touch -t${timestamp} ${downloadDest}
+        fi
+        
+        if [ "${AlreadyProcessed}" = "false" ] ; then
+            #copy number of jars exported, preserving date
+            if [ "${srcJarCount}" -gt 0 ] ; then
+                if [ "${DEBUG}" = "true" ] ; then
+                    echo "publishBuildArtifacts: Copying ${srcJarCount} jar(s)"
+                    echo "                       from: '${src}'"
+                    echo "                         to: '${downloadDest}'"
+                fi
+                cp --preserve=timestamps ${src}/*.jar ${downloadDest}/.
+            fi
+            destJarCount=`ls ${downloadDest} | grep -c [.]jar$`
+            if [ "${DEBUG}" = "true" ] ; then
+                echo "publishBuildArtifacts: ${destJarCount} jar(s) copied."
+            fi
+    
+            #copy number of archives (zips) exported, preserving date
+            if [ "${srcZipCount}" -gt 0 ] ; then
+                if [ "${DEBUG}" = "true" ] ; then
+                    echo "publishBuildArtifacts: Copying ${srcZipCount} zip(s)"
+                    echo "                       from: '${src}'"
+                    echo "                         to: '${downloadDest}'"
+                fi
+                cp --preserve=timestamps ${src}/*.zip ${downloadDest}/.
+            fi
+            # check number of appropriately qualified destination files
+            destZipCount=`ls ${downloadDest}/*${srcQualified}* | grep -c [.]zip$`
+            if [ "${DEBUG}" = "true" ] ; then
+                echo "publishBuildArtifacts: ${destZipCount} zips copied."
+            fi
+    
+            #verify everything copied correctly
+            if [ \( "${srcJarCount}" = "${destJarCount}" \) -a \( "${srcZipCount}" = "${destZipCount}" \) ] ; then
+                echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s) successfully."
+                PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} + 100`
+                NEW_WEB_ARTIFACTS=true
+            else
+                echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s), but Src and Dest numbers don't match."
+                echo "    Expected ${srcJarCount} jar(s) and ${srcZipCount} zip(s) to copy. Publish failed!"
+                Error=true
+            fi
+        else
+            echo "    Found ${destJarCount} jar(s) and ${destZipCount} zip(s) from build '${srcQualified}' pre-existing. Processing skipped."
+            PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} + 100`
         fi
     else
         # Something is not right! skipping.."
@@ -788,13 +809,10 @@ fi
 
 # Check for M2_HOME (only set in bashrc: if not set running from cron, and load)
 if [ ! -x ${M2_HOME}/bin/mvn ] ; then
-    env
-    echo " whoami=`whoami`"
     echo "Cannot find Maven executable using default value '${M2_HOME}/bin/mvn'. Loading .bashrc..."
-    usr=`whoami`
-    /home/data/users/$usr/.bashrc
+    source ${HOME}/.bashrc
     if [ $? -ne 0 ] ; then
-        echo "Error: Unable to load /home/data/users/$usr/.bashrc... exiting"
+        echo "Error: Unable to load ${HOME}/.bashrc... exiting"
         exit 1
     else
         if [ ! -x ${M2_HOME}/bin/mvn ] ; then
@@ -808,20 +826,22 @@ else
     echo "Found: ${M2_HOME}/bin/mvn"
 fi
 
-exit
 #==========================
 #     Test for handoff
 #        if not exit with minimal work done.
 #==========================
 curdir=`pwd`
-cd $HOME_DIR
 NEW_RESULTS=false
 NEW_P2=false
 NEW_WEB_ARTIFACTS=false
 ERROR=false
 handoff_cnt=0
+
+echo "=========================================== "
+cd $HOME_DIR
 for handoff in `ls handoff-file*.dat` ; do
     ERROR=false
+    cd $HOME_DIR
     handoff_cnt=`expr ${handoff_cnt} + 1`
     if [ "$handoff_cnt" -gt "1" ] ; then
         echo " "
@@ -868,7 +888,7 @@ for handoff in `ls handoff-file*.dat` ; do
            fi
            echo "Success: now deleting '${handoff}'"
            echo "TODO: also should delete '${BUILD_ARCHIVE_LOC}' but need to make sure tests export to different area first"
-           rm ${handoff}
+           rm ${HOME_DIR}/${handoff}
            NEW_RESULTS=true
        else
            if [ "${DEBUG}" = "true" ] ; then
@@ -886,7 +906,7 @@ for handoff in `ls handoff-file*.dat` ; do
               echo "Processing of '${handoff}' complete."
               # remove handoff
               echo "   Removing '${handoff}'."
-              rm ${handoff}
+              rm ${HOME_DIR}/${handoff}
           else
               # Report error
               echo "Error processing of '${handoff}'."
@@ -901,7 +921,7 @@ for handoff in `ls handoff-file*.dat` ; do
                  echo "Processing of '${handoff}' complete."
                  # remove handoff
                  echo "   Removing '${handoff}'."
-                 rm ${handoff}
+                 rm ${HOME_DIR}/${handoff}
              else
                  # Report error
                  echo "Error processing of '${handoff}'."
