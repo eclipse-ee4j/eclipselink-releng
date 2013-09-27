@@ -879,7 +879,7 @@ for handoff in `ls handoff-file*.dat` ; do
                echo "Cannot find '${BUILDFILE}'. Aborting..."
            fi
            # With two maven pushes Completed should be 1 higher than expected, so adjust before compare
-           PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} - 1`
+#           PUB_SCOPE_COMPLETED=`expr ${PUB_SCOPE_COMPLETED} - 1`
 
        fi
        if [ "${PUB_SCOPE_EXPECTED}" = "${PUB_SCOPE_COMPLETED}" ] ; then
