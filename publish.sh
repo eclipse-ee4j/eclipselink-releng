@@ -319,14 +319,14 @@ publishBuildArtifacts() {
             echo "   date      = '${date}'"
             echo "   timestamp = '${timestamp}'"
         fi
-        
+
         #count number of jars exported
         srcJarCount=`ls ${src} | grep -c [.]jar$`
         #copy number of archives (zips) exported
         srcZipCount=`ls ${src} | grep -c [.]zip$`
         #track qualifier pattern in case multiple builds in one day (reverse order because sharedlib zip may be first and is non-conformant)
         srcQualified=`ls -r ${src} | grep -m1 [.]zip$ | cut -d'.' -f4`
-        
+
         AlreadyProcessed=false
         if [ -d ${rootDest}/${version}/${date} ] ; then
             destJarCount=`ls ${downloadDest} | grep -c [.]jar$`
@@ -342,11 +342,11 @@ publishBuildArtifacts() {
             #Mk download destination dir (dest/nightly/<version>/<date>)
             downloadDest=${rootDest}/${version}/${date}
             createPath ${downloadDest}
-            
+
             #force <date> dir's date attribute to date of handoff
             touch -t${timestamp} ${downloadDest}
         fi
-        
+
         if [ "${AlreadyProcessed}" = "false" ] ; then
             #copy number of jars exported, preserving date
             if [ "${srcJarCount}" -gt 0 ] ; then
@@ -361,7 +361,7 @@ publishBuildArtifacts() {
             if [ "${DEBUG}" = "true" ] ; then
                 echo "publishBuildArtifacts: ${destJarCount} jar(s) copied."
             fi
-    
+
             #copy number of archives (zips) exported, preserving date
             if [ "${srcZipCount}" -gt 0 ] ; then
                 if [ "${DEBUG}" = "true" ] ; then
@@ -376,7 +376,7 @@ publishBuildArtifacts() {
             if [ "${DEBUG}" = "true" ] ; then
                 echo "publishBuildArtifacts: ${destZipCount} zips copied."
             fi
-    
+
             #verify everything copied correctly
             if [ \( "${srcJarCount}" = "${destJarCount}" \) -a \( "${srcZipCount}" = "${destZipCount}" \) ] ; then
                 echo "    Published ${destJarCount} jar(s) and ${destZipCount} zip(s) successfully."
@@ -860,14 +860,15 @@ for handoff in `ls handoff-file*.dat` ; do
        fi
        if [ "${MVN}" = "true" ] ; then
            checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH_NM}
-           echo "Preparing to upload to EclipseLink Maven Repo. Setting Build to use 'uploadToMaven' script."
-           BUILDFILE=${RUNTIME_REPO}/uploadToMaven.xml
-           if [ -f ${BUILDFILE} ] ; then
-               echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}"
-               publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}
-           else
-               echo "Cannot find '${BUILDFILE}'. Aborting..."
-           fi
+# Initial: Disable publish to download.eclipse.org. Will remove after successful.
+#           echo "Preparing to upload to EclipseLink Maven Repo. Setting Build to use 'uploadToMaven' script."
+#           BUILDFILE=${RUNTIME_REPO}/uploadToMaven.xml
+#           if [ -f ${BUILDFILE} ] ; then
+#               echo "publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}"
+#               publishMavenRepo ${BUILD_ARCHIVE_LOC} ${BRANCH} ${BLDDATE} ${VERSION} ${QUALIFIER} ${GITHASH}
+#           else
+#               echo "Cannot find '${BUILDFILE}'. Aborting..."
+#           fi
 
            echo "Preparing to upload to Sonatype OSS Repo. Setting Build to use 'uploadToNexus' script."
            BUILDFILE=${RUNTIME_REPO}/uploadToNexus.xml
