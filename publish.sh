@@ -117,8 +117,10 @@ checkoutCurrentBranch() {
     # switch to desired branch
     ${GIT_EXEC} checkout ${desired_branch}
     if [ "$?" = "0" ] ; then
-       # parse status of repo for current branch
-       current_branch=`${GIT_EXEC} status | grep -m1 "#" | cut -s -d' ' -f4`
+       # parse status of repo for current branch (pre-git 1.9)
+       #current_branch=`${GIT_EXEC} status | grep -m1 "#" | cut -s -d' ' -f4`
+       # parse status of repo for current branch (git 1.9)
+       current_branch=`${GIT_EXEC} status | grep -m1 "branch" | cut -s -d' ' -f3`
        if [ "${DEBUG}" = "true" ] ; then
           echo "Now on '${current_branch}' in '${local_repo}'"
           echo "Desired branch is '${desired_branch}'."
