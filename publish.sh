@@ -326,6 +326,8 @@ publishBuildArtifacts() {
         srcZipCount=`ls ${src} | grep -c [.]zip$`
         #track qualifier pattern in case multiple builds in one day (reverse order because sharedlib zip may be first and is non-conformant)
         srcQualified=`ls -r ${src} | grep -m1 [.]zip$ | cut -d'.' -f4`
+        #location to copy artifacts
+        downloadDest=${rootDest}/${version}/${date}
 
         AlreadyProcessed=false
         if [ -d ${rootDest}/${version}/${date} ] ; then
@@ -340,7 +342,6 @@ publishBuildArtifacts() {
             fi
         else
             #Mk download destination dir (dest/nightly/<version>/<date>)
-            downloadDest=${rootDest}/${version}/${date}
             createPath ${downloadDest}
 
             #force <date> dir's date attribute to date of handoff
