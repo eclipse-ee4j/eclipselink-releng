@@ -105,6 +105,11 @@ checkoutCurrentBranch() {
        exit 1
     fi
 
+    if [ "${DEBUG}" = "true" ] ; then
+       echo "local_repo:     '${local_repo}'"
+       echo "desired_branch: '${desired_branch}'"
+    fi
+
     #Must run git commands from Git repo dir so, store current dir, and switch to repo
     current_dir=`pwd`
     cd ${local_repo}
@@ -114,9 +119,10 @@ checkoutCurrentBranch() {
     if [ "$?" = "0" ] ; then
        # parse status of repo for current branch
        current_branch=`${GIT_EXEC} status | grep -m1 "#" | cut -s -d' ' -f4`
-       #if debug
-       ## echo "Now on '${current_branch}' in '${local_repo}'"
-       ## echo "Git checkout complete."
+       if [ "${DEBUG}" = "true" ] ; then
+          echo "Now on '${current_branch}' in '${local_repo}'"
+          echo "Desired branch is '${desired_branch}'."
+       fi
        if [ "${desired_branch}" = "${current_branch}" ] ; then
           # get latest on branch
           ##   has to occur after setting the correct banch because "git pull" only grabs changes on the active branch.
