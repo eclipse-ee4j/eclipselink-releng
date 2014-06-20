@@ -856,7 +856,7 @@ for handoff in `ls handoff-file*.dat` ; do
         echo " "
         echo " "
     fi
-    echo "Detected handoff file:'${handoff}'. Process starting..."
+    echo "INFO: `date`: Detected handoff file:'${handoff}'. Process starting..."
     # Do stuff
     parseHandoff ${handoff}
     if [ "$PROC" = "build" ] ; then
@@ -896,7 +896,7 @@ for handoff in `ls handoff-file*.dat` ; do
                echo "PUB_SCOPE_EXPECTED  = '${PUB_SCOPE_EXPECTED}'"
                echo "PUB_SCOPE_COMPLETED = '${PUB_SCOPE_COMPLETED}'"
            fi
-           echo "Success: now deleting '${handoff}'"
+           echo "INFO: `date`: Success: now deleting '${handoff}'"
            echo "TODO: also should delete '${BUILD_ARCHIVE_LOC}' but need to make sure tests export to different area first"
            rm ${HOME_DIR}/${handoff}
            NEW_RESULTS=true
@@ -905,7 +905,7 @@ for handoff in `ls handoff-file*.dat` ; do
                echo "PUB_SCOPE_EXPECTED  = '${PUB_SCOPE_EXPECTED}'"
                echo "PUB_SCOPE_COMPLETED = '${PUB_SCOPE_COMPLETED}'"
            fi
-           echo "Full processing failed: Cannot remove '${handoff}' and '${BUILD_ARCHIVE_LOC}'"
+           echo "ERROR: `date`: Full processing failed: Cannot remove '${handoff}' and '${BUILD_ARCHIVE_LOC}'"
            echo "    Deletion aborted..."
        fi
     else
@@ -913,13 +913,13 @@ for handoff in `ls handoff-file*.dat` ; do
           publishTestArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE} ${HOST}
           # Can combine when build publish complete.
           if [ "${ERROR}" = "false" ] ; then
-              echo "Processing of '${handoff}' complete."
+              echo "INFO: `date`: Processing of '${handoff}' complete."
               # remove handoff
               echo "   Removing '${handoff}'."
               rm ${HOME_DIR}/${handoff}
           else
               # Report error
-              echo "Error processing of '${handoff}'."
+              echo "ERROR: `date`: Error processing of '${handoff}'."
               echo "    Deletion aborted..."
           fi
        else
@@ -928,13 +928,13 @@ for handoff in `ls handoff-file*.dat` ; do
              publishToolsArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE}
              # Can combine when build publish complete.
              if [ "${ERROR}" = "false" ] ; then
-                 echo "Processing of '${handoff}' complete."
+                 echo "INFO: `date`: Processing of '${handoff}' complete."
                  # remove handoff
                  echo "   Removing '${handoff}'."
                  rm ${HOME_DIR}/${handoff}
              else
                  # Report error
-                 echo "Error processing of '${handoff}'."
+                 echo "ERROR: `date`: Error processing of '${handoff}'."
                  echo "    Deletion aborted..."
              fi
           else
@@ -942,7 +942,7 @@ for handoff in `ls handoff-file*.dat` ; do
           fi
        fi
     fi
-    echo "   Finished."
+    echo "INFO: `date`: Finished."
 done
 echo "Completed processing of all (${handoff_cnt}) handoff files."
 if [ "${NEW_RESULTS}" = "true" ] ; then
@@ -968,5 +968,5 @@ if [ "${NEW_P2}" = "true" ] ; then
         echo "cannot find '${RELENG_REPO}/buildCompositeP2.sh' to run."
     fi
 fi
-echo "Publish complete."
+echo "INFO: `date`: Publish complete."
 
