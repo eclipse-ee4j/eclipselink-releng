@@ -167,10 +167,10 @@ parseHandoff() {
         QUALIFIER_ERR=false
     fi
     PROC=`echo ${handoff_file} | cut -s -d'-' -f3`
-    if [ !  \( \( "${PROC}" = "test" \) -o \( "${PROC}" = "build" \) -o \( "${PROC}" = "tools" \) \) ] ; then
+    if [ !  \( \( "${PROC}" = "test" \) -o \( "${PROC}" = "build" \) -o \( "${PROC}" = "tools" \) -o \( "${PROC}" = "build_se" \) -o \( "${PROC}" = "test_se" \) \) ] ; then
         echo "PROC ${handoff_error_string1}"
         echo "     ${handoff_error_string2}"
-        echo "     ${handoff_error_string3} <PROC> = 'build','test', or 'tools'!"
+        echo "     ${handoff_error_string3} <PROC> = 'build','test','build_se','test_se' or 'tools'!"
         PROC_ERR=true
     else
         PROC_ERR=false
@@ -859,7 +859,7 @@ for handoff in `ls handoff-file*.dat` ; do
     echo "INFO: `date`: Detected handoff file:'${handoff}'. Process starting..."
     # Do stuff
     parseHandoff ${handoff}
-    if [ "$PROC" = "build" ] ; then
+    if [ "$PROC" = "build" -o "$PROC" = "build_se" ] ; then
        establishPublishScope ${BUILD_ARCHIVE_LOC}
        if [ "${PUB_SCOPE_EXPECTED}" -ge 100 ] ; then
            publishBuildArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE} ${TIMESTAMP}
@@ -867,7 +867,7 @@ for handoff in `ls handoff-file*.dat` ; do
        if [ "${PUB_SCOPE_EXPECTED}" -ge 10 ] ; then
            publishP2Repo ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${QUALIFIER}
        fi
-       if [ "${MVN}" = "true" ] ; then
+       if [ "${MVN}" = "true" -a "$PROC" = "build" ] ; then
            checkoutCurrentBranch ${RUNTIME_REPO} ${BRANCH_NM}
 # Initial: Disable publish to download.eclipse.org. Will remove after successful.
 #           echo "Preparing to upload to EclipseLink Maven Repo. Setting Build to use 'uploadToMaven' script."
@@ -909,7 +909,7 @@ for handoff in `ls handoff-file*.dat` ; do
            echo "    Deletion aborted..."
        fi
     else
-       if [ "$PROC" = "test" ] ; then
+       if [ "$PROC" = "test" -o "$PROC" = "test_se" ] ; then
           publishTestArtifacts ${BUILD_ARCHIVE_LOC} ${DNLD_DIR} ${VERSION} ${BLDDATE} ${HOST}
           # Can combine when build publish complete.
           if [ "${ERROR}" = "false" ] ; then
