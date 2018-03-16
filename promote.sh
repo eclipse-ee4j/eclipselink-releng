@@ -497,7 +497,7 @@ else
 fi
 if [ ! -d ${RUNTIME_REPO} ] ; then
     echo "EclipseLink Runtime repo missing! Will try to clone."
-    echo "${GIT_EXEC} clone ssh://git.eclipse.org/gitroot/eclipselink/eclipselink.runtime.git"
+    echo "${GIT_EXEC} clone git@github.com:eclipse-ee4j/eclipselink.git eclipselink.runtime"
     if [ ! -d ${RUNTIME_REPO} ] ; then
         echo "Still cannot find '${RUNTIME_REPO}'. Something went wrong... aborting."
         exit 1
