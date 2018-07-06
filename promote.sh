@@ -369,6 +369,7 @@ callAnt() {
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dreleng.repo.dir=${RELENG_REPO} -Dgit.exec=${GIT_EXEC}"
         arguments="${arguments} -Dbranch.name=${branch_nm} -Drelease.version=${version} -Dbuild.type=${milestone} -Dbranch=${branch}"
         arguments="${arguments} -Dversion.qualifier=${qualifier} -Dbuild.date=${blddate} -Dgit.hash=${githash}"
+        arguments="${arguments} -Dsigning.script=${RELENG_REPO}/sign.sh"
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
         echo "pwd='`pwd`"
@@ -485,7 +486,7 @@ else
 fi
 if [ ! -d ${RELENG_REPO} ] ; then
     echo "Releng repo missing! Will try to clone."
-    echo "${GIT_EXEC} clone ssh://git.eclipse.org/gitroot/eclipselink/eclipselink.releng.git"
+    echo "${GIT_EXEC} clone ssh://git.eclipse.org:29418/eclipselink/eclipselink.releng.git"
     if [ ! -d ${RELENG_REPO} ] ; then
         echo "Still cannot find '${RELENG_REPO}'. Something went wrong... aborting."
         exit 1
