@@ -33,6 +33,7 @@ BUILD=$1
 MILESTONE=$2
 BRANCH_NM=$3
 DEBUG_ARG=$4
+SIGN=$5
 
 ANT_ARGS=" "
 ANT_OPTS="-Xms512m -Xmx1024m -XX:MaxPermSize=512m"
@@ -369,7 +370,11 @@ callAnt() {
         arguments="-Dbuild.deps.dir=${BldDepsDir} -Dreleng.repo.dir=${RELENG_REPO} -Dgit.exec=${GIT_EXEC}"
         arguments="${arguments} -Dbranch.name=${branch_nm} -Drelease.version=${version} -Dbuild.type=${milestone} -Dbranch=${branch}"
         arguments="${arguments} -Dversion.qualifier=${qualifier} -Dbuild.date=${blddate} -Dgit.hash=${githash}"
-        arguments="${arguments} -Dsigning.script=${RELENG_REPO}/sign.sh"
+        if [ "${SIGN}" = "true" ] ; then
+          arguments="${arguments} -Dsigning.script=${RELENG_REPO}/sign.sh"
+        else
+          arguments="${arguments} -Dsigning.script=${RELENG_REPO}/noSign.sh"
+        fi
 
         # Run Ant from ${exec_location} using ${buildfile} ${arguments}
         echo "pwd='`pwd`"
