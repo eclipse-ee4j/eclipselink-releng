@@ -92,11 +92,47 @@ genArtifact() {
     echo "</repository>" >> $tmp/artifact.xml
 }
 
+unset genIndexPage
+genIndexPage() {
+    # Generate index.html page
+    echo '<html><head><title>EclipseLink Update Site</title><base href="http://download.eclipse.org/" />' > $tmp/indexTmp.html
+    echo '<link rel="stylesheet" type="text/css" href="/eclipse.org-common/themes/Nova/css/reset.css"/><link rel="stylesheet" type="text/css" href="/eclipse.org-common/themes/Nova/css/layout.css" media="screen" /><link rel="stylesheet" type="text/css" href="/eclipse.org-common/themes/Nova/css/header.css" media="screen" /><link rel="stylesheet" type="text/css" href="/eclipse.org-common/themes/Nova/css/footer.css" media="screen" /><link rel="stylesheet" type="text/css" href="/eclipse.org-common/themes/Nova/css/visual.css" media="screen" /></head>' >> $tmp/indexTmp.html
+    echo '<body><div id="novaWrapper"><div id="clearHeader"><div id="logo">' >> $tmp/indexTmp.html
+    echo '<img src="/eclipse.org-common/themes/Nova/images/eclipse.png" alt="Eclipse.org"/></div></div><div id="header"><div id="menu"><ul>' >> $tmp/indexTmp.html
+    echo '<li><a href="//eclipse.org">Home</a></li><li><a href="//eclipse.org/downloads">Downloads</a></li><li><a href="//eclipse.org/users">Users</a></li><li><a href="//eclipse.org/membership">Members</a></li><li><a href="//eclipse.org/committers">Committers</a></li><li><a href="//eclipse.org/resources">Resources</a></li><li><a href="//eclipse.org/projects">Projects</a></li><li><a href="//eclipse.org/org">About Us</a></li>' >> $tmp/indexTmp.html
+    echo '</ul></div><div id="search"><form action="http://www.google.com/cse" id="searchbox_017941334893793413703:sqfrdtd112s"><input type="hidden" name="cx" value="017941334893793413703:sqfrdtd112s" /><input id="searchBox" type="text" name="q" size="25" /><input id="searchButton" type="submit" name="sa" value="Search" /></form><script type="text/javascript" src="http://www.google.com/coop/cse/brand?form=searchbox_017941334893793413703%3Asqfrdtd112s&lang=en"></script></div></div>' >> $tmp/indexTmp.html
+    echo '<div id="novaContent"><div id="fullcolumn"><div id="midcolumn"><h1>EclipseLink Update Site</h1>' >> $tmp/indexTmp.html
+    echo '    <p>This landing page exists to allow visibility to the P2 update site''s URL, and zipped P2 archives. </font> </p>' >> $tmp/indexTmp.html
+    echo '    <h4>The URL is intended for use with:</h4>' >> $tmp/indexTmp.html
+    echo '    	<ul><li>Eclipse''s "Target Platform" creation <b>(Window|Preferences..|Plug-in Development|Target Platform)</b> and </li>' >> $tmp/indexTmp.html
+    echo '    		<li> Update  tools <b>(Help|Update Software)</b>.</li></ul>' >> $tmp/indexTmp.html
+    echo '    		    All downloads are provided under the <a href="http://www.eclipse.org/eclipselink/project-info/license.html">' >> $tmp/indexTmp.html
+    echo '                <b>Eclipse Foundation Software User Agreement</b></a>.<p>' >> $tmp/indexTmp.html
+    echo '</p>' >> $tmp/indexTmp.html
+    echo '<div id="rightcolumn"><div class="sideitem"><h6>Downloadable Zipped P2 Repositories</h6>' >> $tmp/indexTmp.html
+    echo '<ul>' >> $tmp/indexTmp.html
+    cat $tmp/childrenHtml.html >> $tmp/indexTmp.html
+    echo '    </ul>' >> $tmp/indexTmp.html
+    echo '</div>' >> $tmp/indexTmp.html
+    echo '<div id="rightcolumn"><div class="sideitem"><h6>Useful links</h6>' >> $tmp/indexTmp.html
+    echo '    <ul><li><a href="http://www.eclipse.org/eclipselink/releases/">EclipseLink Releases</a></li></ul>' >> $tmp/indexTmp.html
+    echo '</div>' >> $tmp/indexTmp.html
+    echo '</div></div>' >> $tmp/indexTmp.html
+    echo '<br style="clear:both;height:1em;"/>&nbsp;</div><div id="clearFooter"></div><div id="footer"><ul id="footernav"><li><a href="//eclipse.org/">Home</a></li><li><a href="//eclipse.org/legal/privacy.php">Privacy Policy</a></li><li><a href="//eclipse.org/legal/termsofuse.php">Terms of Use</a></li><li><a href="//eclipse.org/legal/copyright.php">Copyright Agent</a></li><li><a href="//eclipse.org/legal">Legal</a></li><li><a href="//eclipse.org/org/foundation/contact.php">Contact Us</a></li></ul><span id="copyright">Copyright &copy; 2013 The Eclipse Foundation. All Rights Reserved.</span></div></div></body></html>' >> $tmp/indexTmp.html
+}
+
 unset genChildren
 genChildren() {
     for child in `ls -dr [0-9]* | grep -v zip` ; do
         child_count=`expr $child_count + 1`
         echo "    <child location='${child}'/>" >> $tmp/children.xml
+    done
+}
+
+unset genHtmlChildren
+genHtmlChildren() {
+    for child in `ls -dr [0-9]* | grep zip` ; do
+        echo "        <li><a href='http://www.eclipse.org/downloads/download.php?file=/rt/eclipselink/updates/${child}'/>${child}</a></li>" >> $tmp/childrenHtml.html
     done
 }
 
@@ -112,6 +148,13 @@ child_count=1
 genChildren
 genContent
 genArtifact
+
+if [ "$1" = "release" ]
+then
+    genHtmlChildren
+    genIndexPage
+    mv -f $tmp/indexTmp.html  ${SITE_DIR}/index.html
+fi
 
 # Copy the completed file to the server, and cleanup
 mv -f $tmp/content.xml  ${SITE_DIR}/compositeContent.xml
