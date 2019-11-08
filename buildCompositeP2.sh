@@ -132,7 +132,7 @@ genChildren() {
 unset genHtmlChildren
 genHtmlChildren() {
     for child in `ls -dr [0-9]* | grep zip` ; do
-        echo "        <li><a href='http://www.eclipse.org/downloads/download.php?file=/rt/eclipselink/updates/${child}'/>${child}</a></li>" >> $tmp/childrenHtml.html
+        echo "        <li><a href='http://www.eclipse.org/downloads/download.php?file=/rt/eclipselink/updates/${child}'>${child}</a></li>" >> $tmp/childrenHtml.html
     done
 }
 
