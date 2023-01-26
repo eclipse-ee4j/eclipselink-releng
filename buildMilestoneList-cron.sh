@@ -40,18 +40,18 @@ genResultSummary() {
         file=`ls | sort -r | grep -m1 ${pattern}`
         prev=`ls ${BaseDownloadNFSDir}/milestones/${version}/${last}/${hostdir} | sort -r | grep -m1 ${pattern}`
         if [ "${prev}" != "" ] ; then
-            expected=`cat ${BaseDownloadNFSDir}/milestones/${version}/${last}/${hostdir}/${prev} | grep -m1 "^<td>[0-9]" | cut -d">" -f2 | cut -d"<" -f1`
+            expected=`cat ${BaseDownloadNFSDir}/milestones/${version}/${last}/${hostdir}/${prev} | grep -m1 "^[[:space:]]*<td>[0-9]" | cut -d">" -f2 | cut -d"<" -f1`
         else
             # If the previous run didn't have this file, then expected result is 0
             expected=0
         fi
         if [ "${file}" != "" ] ; then
-            actual=`cat ${file} | grep -m1 "^<td>[0-9]" | cut -d">" -f2 | cut -d"<" -f1`
+            actual=`cat ${file} | grep -m1 "^[[:space:]]*<td>[0-9]" | cut -d">" -f2 | cut -d"<" -f1`
             if [ ${expected} -eq 0 ] ; then
                 expected=${actual}
             fi
-            failures=`cat ${file} | grep -m1 "^<td>[0-9]" | cut -d">" -f4 | cut -d"<" -f1`
-            errors=`cat ${file} | grep -m1 "^<td>[0-9]" | cut -d">" -f6 | cut -d"<" -f1`
+            failures=`cat ${file} | grep -m1 "^[[:space:]]*<td>[0-9]" | cut -d">" -f4 | cut -d"<" -f1`
+            errors=`cat ${file} | grep -m1 "^[[:space:]]*<td>[0-9]" | cut -d">" -f6 | cut -d"<" -f1`
             test_result=`expr ${failures} + ${errors}`
         else
             # If the file doesn't exist (tests weren't run yet) then all values should be zero
